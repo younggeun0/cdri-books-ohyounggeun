@@ -23,7 +23,13 @@ export async function fetchBookPage(
   });
   if (target !== "all") search.set("target", target);
 
-  const res = await fetch(`/api/books?${search}`, { signal });
+  const res = await fetch(`/api/books?${search}`, { signal }).catch(
+    (error: unknown) => {
+      // 취소는 TanStack Query가 처리하도록 그대로 던지고, 네트워크 실패만 사용자 문구로 바꾼다.
+      if (signal?.aborted) throw error;
+      throw new Error("네트워크 연결을 확인한 뒤 다시 시도해 주세요.");
+    },
+  );
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as {
       message?: string;

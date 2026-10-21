@@ -1,0 +1,104 @@
+"use client";
+
+import type { Book, BookSearchParams } from "@/entities/book";
+import { EmptyState } from "@/components/EmptyState";
+import { ResultCount } from "@/components/ResultCount";
+import {
+  BookList,
+  BookListSkeleton,
+} from "@/features/book-list/components/BookList";
+import { useWishlist } from "@/features/wishlist/wishlist";
+import { useBookSearch } from "../queries";
+
+const LABEL = "도서 검색 결과";
+
+type SearchScreen =
+  | { kind: "idle" | "loading" | "empty" }
+  | { kind: "error"; message: string }
+  | { kind: "results"; totalCount: number; books: Book[] };
+
+function useSearchScreen(params: BookSearchParams) {
+  const search = useBookSearch(params);
+  const { data, error } = search;
+
+  // 다음 페이지만 실패했다면 이미 받은 목록은 남겨 둔다. 화면 전체를 에러로 바꾸지 않는다.
+  let screen: SearchScreen;
+  if (params.query.trim() === "") screen = { kind: "idle" };
+  else if (!data && error) screen = { kind: "error", message: error.message };
+  else if (!data) screen = { kind: "loading" };
+  else if (data.pages[0].totalCount === 0) screen = { kind: "empty" };
+  else {
+    screen = {
+      kind: "results",
+      totalCount: data.pages[0].totalCount,
+      books: data.pages.flatMap((page) => page.books),
+    };
+  }
+  return { screen, search };
+}
+
+export function BookSearchResults({ params }: { params: BookSearchParams }) {
+  const { screen, search } = useSearchScreen(params);
+  const { isWished, toggle } = useWishlist();
+
+  switch (screen.kind) {
+    case "idle":
+    case "empty":
+      return (
+        <>
+          <ResultCount label={LABEL} count={0} />
+          <EmptyState message="검색된 결과가 없습니다." />
+        </>
+      );
+    case "loading":
+      return (
+        <>
+          {/* 결과 수 줄이 나중에 생기면서 목록이 밀리지 않도록 같은 높이를 미리 잡는다. */}
+          <div aria-hidden="true" className="mt-6 h-6" />
+          <BookListSkeleton />
+        </>
+      );
+    case "error":
+      return (
+        <div role="alert" className="mt-16 flex flex-col items-center gap-4">
+          <p className="text-caption text-text-secondary">{screen.message}</p>
+          <button
+            type="button"
+            onClick={() => search.refetch()}
+            className="text-body2 bg-primary h-12 rounded-lg px-6 text-white"
+          >
+            다시 시도
+          </button>
+        </div>
+      );
+    case "results":
+      return (
+        <>
+          <ResultCount label={LABEL} count={screen.totalCount} />
+          <BookList
+            books={screen.books}
+            isWished={isWished}
+            onToggleWish={toggle}
+            // 다음 페이지가 실패한 채로 트리거를 켜 두면 실패한 요청을 끝없이 다시 보낸다.
+            hasNextPage={search.hasNextPage && !search.isFetchNextPageError}
+            isFetchingNextPage={search.isFetchingNextPage}
+            onLoadMore={search.fetchNextPage}
+          />
+          {search.isFetchNextPageError && (
+            <div role="alert" className="flex flex-col items-center gap-3 py-6">
+              <p className="text-body2 text-text-subtitle">
+                다음 페이지를 불러오지 못했습니다.
+              </p>
+              <button
+                type="button"
+                onClick={() => search.fetchNextPage()}
+                className="text-body2 border-gray h-10 rounded-lg border px-4"
+              >
+                다시 시도
+              </button>
+            </div>
+          )}
+        </>
+      );
+  }
+}
