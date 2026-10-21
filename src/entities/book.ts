@@ -1,7 +1,8 @@
-import type {
-  KakaoBookDocument,
-  KakaoBookResponse,
-  KakaoBookTarget,
+import {
+  KAKAO_MAX_PAGE,
+  type KakaoBookDocument,
+  type KakaoBookResponse,
+  type KakaoBookTarget,
 } from "@/lib/kakao/types";
 
 export interface Book {
@@ -64,7 +65,7 @@ export function toBook(doc: KakaoBookDocument): Book {
     publisher: doc.publisher,
     translators: doc.translators,
     price: doc.price,
-    // 문서에 판매가 없음의 표기가 없어 0 이하를 모두 "없음"으로 본다. 실제 값은 API 연동 단계에서 확인한다.
+    // 판매가가 없으면 카카오는 -1을 보낸다(문서에는 없고 실제 응답으로 확인). 0 이하를 모두 "없음"으로 본다.
     salePrice: doc.sale_price > 0 ? doc.sale_price : null,
     thumbnail: doc.thumbnail === "" ? null : doc.thumbnail,
     status: doc.status,
@@ -75,7 +76,7 @@ export function toBookPage(res: KakaoBookResponse, page: number): BookPage {
   return {
     books: res.documents.map(toBook),
     totalCount: res.meta.total_count,
-    isEnd: res.meta.is_end,
+    isEnd: res.meta.is_end || page >= KAKAO_MAX_PAGE,
     page,
   };
 }

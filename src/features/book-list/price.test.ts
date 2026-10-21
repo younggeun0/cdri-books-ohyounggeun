@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { toBook } from "@/entities/book";
-import { BOOK_FIXTURES } from "@/lib/kakao/fixtures/books";
+import { KAKAO_DOCUMENTS } from "@/test/kakao-documents";
 import { formatWon, getDisplayPrice } from "./price";
 
-const discounted = toBook(BOOK_FIXTURES[0]);
-const noSale = toBook(BOOK_FIXTURES.find((doc) => doc.sale_price === -1)!);
+const discounted = toBook(KAKAO_DOCUMENTS[0]);
+const noSale = toBook(KAKAO_DOCUMENTS.find((doc) => doc.sale_price === -1)!);
 
 describe("getDisplayPrice", () => {
   it("할인가가 있으면 접힌 상태에 보일 가격은 할인가다", () => {
     expect(getDisplayPrice(discounted)).toEqual({
-      listPrice: 13300,
-      salePrice: 11970,
-      displayPrice: 11970,
+      listPrice: 17000,
+      salePrice: 15300,
+      displayPrice: 15300,
     });
   });
 
