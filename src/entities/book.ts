@@ -41,7 +41,7 @@ export interface BookSearchParams {
   target: SearchTarget;
 }
 
-// 카카오는 ISBN이 없는 책에 "K432532836" 같은 10자 관리번호를 isbn 칸에 넣기도 하므로 길이만으로 판별하지 않는다.
+// ISBN 형식이 아닌 토큰이 섞여도 isbn10으로 오인하지 않도록 길이가 아닌 형식으로 판별한다.
 function splitIsbn(raw: string) {
   const tokens = raw.split(/\s+/).filter(Boolean);
   return {
@@ -64,7 +64,7 @@ export function toBook(doc: KakaoBookDocument): Book {
     publisher: doc.publisher,
     translators: doc.translators,
     price: doc.price,
-    // 할인가가 없을 때 실제 API는 -1을 보낸다(문서에는 명시 없음). 0 이하는 모두 "없음"으로 본다.
+    // 문서에 판매가 없음의 표기가 없어 0 이하를 모두 "없음"으로 본다. 실제 값은 API 연동 단계에서 확인한다.
     salePrice: doc.sale_price > 0 ? doc.sale_price : null,
     thumbnail: doc.thumbnail === "" ? null : doc.thumbnail,
     status: doc.status,
