@@ -51,7 +51,13 @@ export function BookSearchResults({ params }: { params: BookSearchParams }) {
         </>
       );
     case "loading":
-      return <BookListSkeleton />;
+      return (
+        <>
+          {/* 결과 수 줄이 나중에 생기면서 목록이 밀리지 않도록 같은 높이를 미리 잡는다. */}
+          <div aria-hidden="true" className="mt-6 h-6" />
+          <BookListSkeleton />
+        </>
+      );
     case "error":
       return (
         <div role="alert" className="mt-16 flex flex-col items-center gap-4">
