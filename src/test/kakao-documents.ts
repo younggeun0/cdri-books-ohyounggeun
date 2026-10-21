@@ -1,0 +1,47 @@
+import type { KakaoBookDocument } from "@/lib/kakao/types";
+
+// 2026-10-21 실제 카카오 응답에서 확인한 형태 세 가지: 할인가 있음, 판매가 없음(-1), ISBN13만 있음(앞에 공백).
+export const KAKAO_DOCUMENTS = [
+  {
+    title: "노르웨이의 숲",
+    contents: "무라카미 하루키의 대표작.",
+    url: "https://search.daum.net/search?w=bookpage&bookId=1467038",
+    isbn: "8937434482 9788937434488",
+    datetime: "2017-08-07T00:00:00.000+09:00",
+    authors: ["무라카미 하루키"],
+    publisher: "민음사",
+    translators: ["양억관"],
+    price: 17000,
+    sale_price: 15300,
+    thumbnail: "https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=1",
+    status: "정상판매",
+  },
+  {
+    title: "야한 겨울",
+    contents: "판매가가 없는 책.",
+    url: "https://search.daum.net/search?w=bookpage&bookId=6559452",
+    isbn: " 9791137620933",
+    datetime: "2023-12-28T00:00:00.000+09:00",
+    authors: ["한강"],
+    publisher: "출판사",
+    translators: [],
+    price: 3300,
+    sale_price: -1,
+    thumbnail: "",
+    status: "정상판매",
+  },
+  {
+    title: "직업으로서의 소설가",
+    contents: "소설가로서의 이야기.",
+    url: "https://search.daum.net/search?w=bookpage&bookId=1091012",
+    isbn: "8972757713 9788972757719",
+    datetime: "2016-04-25T00:00:00.000+09:00",
+    authors: ["무라카미 하루키"],
+    publisher: "현대문학",
+    translators: ["양윤옥"],
+    price: 16800,
+    sale_price: 15120,
+    thumbnail: "https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=2",
+    status: "정상판매",
+  },
+] satisfies KakaoBookDocument[];

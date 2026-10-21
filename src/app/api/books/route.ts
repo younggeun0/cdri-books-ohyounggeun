@@ -1,8 +1,10 @@
 import type { NextRequest } from "next/server";
-import { searchBooks } from "@/lib/kakao/search";
-import { KAKAO_BOOK_TARGETS, isKakaoBookTarget } from "@/lib/kakao/types";
-
-const MAX_PAGE = 50;
+import { KakaoApiError, searchBooks } from "@/lib/kakao/search";
+import {
+  KAKAO_BOOK_TARGETS,
+  KAKAO_MAX_PAGE,
+  isKakaoBookTarget,
+} from "@/lib/kakao/types";
 
 function badRequest(message: string) {
   return Response.json({ message }, { status: 400 });
@@ -22,15 +24,20 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const page = Math.min(
-    Math.max(Number.parseInt(params.get("page") ?? "1", 10) || 1, 1),
-    MAX_PAGE,
-  );
+  const page = Number(params.get("page") ?? "1");
+  if (!Number.isInteger(page) || page < 1 || page > KAKAO_MAX_PAGE) {
+    return badRequest(`page는 1부터 ${KAKAO_MAX_PAGE} 사이의 정수여야 합니다.`);
+  }
 
-  const result = await searchBooks({
-    query,
-    target: target ?? undefined,
-    page,
-  });
-  return Response.json(result);
+  try {
+    const result = await searchBooks({
+      query,
+      target: target ?? undefined,
+      page,
+    });
+    return Response.json(result);
+  } catch (error) {
+    if (!(error instanceof KakaoApiError)) throw error;
+    return Response.json({ message: error.message }, { status: error.status });
+  }
 }

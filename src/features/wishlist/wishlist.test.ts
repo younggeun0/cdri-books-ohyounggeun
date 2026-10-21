@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
 import { toBook } from "@/entities/book";
-import { BOOK_FIXTURES } from "@/lib/kakao/fixtures/books";
+import { KAKAO_DOCUMENTS } from "@/test/kakao-documents";
 import { parseWishlist, toggleWishlist, wishlistStore } from "./wishlist";
 
-const [a, b, c] = BOOK_FIXTURES.map(toBook);
+const [a, b, c] = KAKAO_DOCUMENTS.map(toBook);
 
 describe("toggleWishlist", () => {
   it("없는 책은 맨 앞에 추가한다", () => {
