@@ -63,14 +63,14 @@ export function BookListSkeleton() {
       {Array.from({ length: SKELETON_ROWS }, (_, index) => (
         <li
           key={index}
-          className="border-divider flex animate-pulse items-center gap-4 border-b py-4 md:gap-12 md:pr-4 md:pl-12"
+          className="border-divider flex animate-pulse items-center gap-4 border-b py-4 lg:gap-12 lg:pr-4 lg:pl-12"
         >
           <div className="bg-light-gray h-[68px] w-12 shrink-0" />
           <div className="flex flex-1 flex-col gap-2">
             <div className="bg-light-gray h-5 w-2/3 rounded" />
             <div className="bg-light-gray h-4 w-1/3 rounded" />
           </div>
-          <div className="bg-light-gray hidden h-12 w-[238px] rounded-lg md:block" />
+          <div className="bg-light-gray hidden h-12 w-[238px] rounded-lg lg:block" />
         </li>
       ))}
     </ul>
