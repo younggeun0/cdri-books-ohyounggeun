@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { EmptyState } from "@/components/EmptyState";
 import { PageTitle } from "@/components/PageTitle";
-import { ResultCount } from "@/components/ResultCount";
-import { BookSearchSection } from "@/features/book-search/components/BookSearchSection";
+import { BookSearchView } from "@/features/book-search/components/BookSearchView";
 
 export const metadata: Metadata = { title: "도서 검색" };
 
@@ -12,11 +10,19 @@ export default function Home() {
     <>
       <PageTitle>도서 검색</PageTitle>
       {/* useSearchParams의 URL은 요청 시점에야 정해져서, Suspense 밖에서 쓰면 prerender가 막힌다. */}
-      <Suspense fallback={<div className="mt-4 h-11 md:h-[50px]" />}>
-        <BookSearchSection />
+      <Suspense fallback={<SearchFallback />}>
+        <BookSearchView />
       </Suspense>
-      <ResultCount label="도서 검색 결과" count={0} />
-      <EmptyState message="검색된 결과가 없습니다." />
+    </>
+  );
+}
+
+// 검색 입력 줄과 결과 수 줄의 높이를 그대로 잡아 두어, 클라이언트가 붙을 때 아래 내용이 밀리지 않게 한다.
+function SearchFallback() {
+  return (
+    <>
+      <div className="mt-4 h-11 md:h-[50px]" />
+      <div className="mt-6 h-6" />
     </>
   );
 }
