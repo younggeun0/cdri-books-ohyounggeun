@@ -30,6 +30,10 @@ export interface KakaoBookResponse {
 export const KAKAO_BOOK_TARGETS = ["title", "person", "publisher"] as const;
 export type KakaoBookTarget = (typeof KAKAO_BOOK_TARGETS)[number];
 
+export function isKakaoBookTarget(value: string): value is KakaoBookTarget {
+  return (KAKAO_BOOK_TARGETS as readonly string[]).includes(value);
+}
+
 export interface KakaoBookSearchRequest {
   query: string;
   target?: KakaoBookTarget;

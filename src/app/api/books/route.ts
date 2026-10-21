@@ -1,11 +1,8 @@
 import type { NextRequest } from "next/server";
 import { searchBooks } from "@/lib/kakao/search";
-import { KAKAO_BOOK_TARGETS, type KakaoBookTarget } from "@/lib/kakao/types";
+import { KAKAO_BOOK_TARGETS, isKakaoBookTarget } from "@/lib/kakao/types";
 
 const MAX_PAGE = 50;
-function isTarget(value: string): value is KakaoBookTarget {
-  return (KAKAO_BOOK_TARGETS as readonly string[]).includes(value);
-}
 
 function badRequest(message: string) {
   return Response.json({ message }, { status: 400 });
@@ -19,7 +16,7 @@ export async function GET(request: NextRequest) {
   if (!query) return badRequest("query는 필수입니다.");
 
   const target = params.get("target");
-  if (target !== null && !isTarget(target)) {
+  if (target !== null && !isKakaoBookTarget(target)) {
     return badRequest(
       `target은 ${KAKAO_BOOK_TARGETS.join(", ")} 중 하나여야 합니다.`,
     );
