@@ -25,7 +25,7 @@ export class KakaoApiError extends Error {
     /** 사용자에게 그대로 보여 줄 한국어 문구다. */
     message: string,
     readonly status: number,
-    /** 429일 때 카카오가 준 Retry-After 헤더 원문. 클라이언트가 재시도 지연으로 쓴다. */
+    /** 429일 때 카카오가 준 Retry-After 헤더 원문이다. 클라이언트가 재시도 지연으로 쓴다. */
     readonly retryAfter?: string,
   ) {
     super(message);
