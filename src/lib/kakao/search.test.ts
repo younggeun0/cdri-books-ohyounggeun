@@ -41,6 +41,7 @@ describe("searchBooks", () => {
       target: "person",
     });
     expect(init.headers).toEqual({ Authorization: "KakaoAK test-key" });
+    expect(init.signal).toBeInstanceOf(AbortSignal);
   });
 
   it("API 키가 없으면 카카오를 호출하지 않고 500 에러를 던진다", async () => {
@@ -82,6 +83,17 @@ describe("searchBooks", () => {
 
     await expect(searchBooks({ query: "a", page: 1 })).rejects.toMatchObject({
       status: 502,
+    });
+  });
+
+  it("카카오 응답이 제한 시간을 넘기면 504 에러로 바꾼다", async () => {
+    vi.stubEnv("KAKAO_REST_API_KEY", "test-key");
+    stubFetch(new DOMException("timed out", "TimeoutError"));
+
+    await expect(searchBooks({ query: "a", page: 1 })).rejects.toMatchObject({
+      status: 504,
+      message:
+        "도서 검색 응답이 늦어지고 있습니다. 잠시 후 다시 시도해 주세요.",
     });
   });
 });
