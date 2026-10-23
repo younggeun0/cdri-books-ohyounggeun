@@ -46,79 +46,91 @@ export function BookSearchResults() {
   const { screen, search } = useSearchScreen(params);
   const { isWished, toggle } = useWishlist();
 
-  switch (screen.kind) {
-    case "idle":
-    case "empty":
-      return (
-        <>
-          <ResultCount label={LABEL} count={0} />
-          <EmptyState message="검색된 결과가 없습니다." />
-        </>
-      );
-    case "loading":
-      return <BookSearchResultsSkeleton />;
-    case "error":
-      return (
-        <div role="alert" className="mt-16 flex flex-col items-center gap-4">
-          <p className="text-caption text-text-secondary">{screen.message}</p>
-          <Button size="md" onClick={() => search.refetch()}>
-            다시 시도
-          </Button>
-        </div>
-      );
-    case "results":
-      return (
-        <>
-          <ResultCount label={LABEL} count={screen.totalCount} />
-          <BookList
-            books={screen.books}
-            isWished={isWished}
-            onToggleWish={toggle}
-          />
-          {/* 가상 목록은 전체 높이를 차지하므로 그 뒤의 센티널이 실제 목록 끝에 놓인다. */}
-          {/* 다음 페이지가 실패한 채로 트리거를 켜 두면 실패한 요청을 끝없이 다시 보낸다. */}
-          {search.hasNextPage && !search.isFetchNextPageError && (
-            <InfiniteScrollTrigger
-              enabled={!search.isFetchingNextPage}
-              onLoadMore={search.fetchNextPage}
+  return (
+    <>
+      {/* 상태가 바뀌어도 같은 요소로 남아야 aria-live가 결과 수 변화를 읽어 준다. */}
+      <ResultCount label={LABEL} count={resultCount(screen)} />
+      {renderBody()}
+    </>
+  );
+
+  function renderBody() {
+    switch (screen.kind) {
+      case "idle":
+      case "empty":
+        return <EmptyState message="검색된 결과가 없습니다." />;
+      case "loading":
+        return <BookListSkeleton />;
+      case "error":
+        return (
+          <div role="alert" className="mt-4 flex flex-col items-center gap-4">
+            <p className="text-caption text-text-secondary">{screen.message}</p>
+            <Button size="md" onClick={() => search.refetch()}>
+              다시 시도
+            </Button>
+          </div>
+        );
+      case "results":
+        return (
+          <>
+            <BookList
+              books={screen.books}
+              isWished={isWished}
+              onToggleWish={toggle}
             />
-          )}
-          {search.isFetchingNextPage && (
-            <p
-              role="status"
-              className="text-body2 text-text-subtitle flex items-center justify-center gap-2 py-6"
-            >
-              <span
-                aria-hidden="true"
-                className="border-gray border-t-primary size-4 animate-spin rounded-full border-2"
+            {/* 가상 목록은 전체 높이를 차지하므로 그 뒤의 센티널이 실제 목록 끝에 놓인다. */}
+            {/* 다음 페이지가 실패한 채로 트리거를 켜 두면 실패한 요청을 끝없이 다시 보낸다. */}
+            {search.hasNextPage && !search.isFetchNextPageError && (
+              <InfiniteScrollTrigger
+                enabled={!search.isFetchingNextPage}
+                onLoadMore={search.fetchNextPage}
               />
-              불러오는 중
-            </p>
-          )}
-          {search.isFetchNextPageError && (
-            <div role="alert" className="flex flex-col items-center gap-3 py-6">
-              <p className="text-body2 text-text-subtitle">
-                다음 페이지를 불러오지 못했습니다.
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => search.fetchNextPage()}
+            )}
+            {search.isFetchingNextPage && (
+              <p
+                role="status"
+                className="text-body2 text-text-subtitle flex items-center justify-center gap-2 py-6"
               >
-                다시 시도
-              </Button>
-            </div>
-          )}
-        </>
-      );
+                <span
+                  aria-hidden="true"
+                  className="border-gray border-t-primary size-4 animate-spin rounded-full border-2"
+                />
+                불러오는 중
+              </p>
+            )}
+            {search.isFetchNextPageError && (
+              <div
+                role="alert"
+                className="flex flex-col items-center gap-3 py-6"
+              >
+                <p className="text-body2 text-text-subtitle">
+                  다음 페이지를 불러오지 못했습니다.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => search.fetchNextPage()}
+                >
+                  다시 시도
+                </Button>
+              </div>
+            )}
+          </>
+        );
+    }
   }
+}
+
+function resultCount(screen: SearchScreen) {
+  if (screen.kind === "results") return screen.totalCount;
+  if (screen.kind === "idle" || screen.kind === "empty") return 0;
+  return null;
 }
 
 export function BookSearchResultsSkeleton() {
   return (
     <>
-      {/* 결과 수 줄이 나중에 생기면서 목록이 밀리지 않도록 같은 높이를 미리 잡는다. */}
-      <div aria-hidden="true" className="mt-6 h-6" />
+      <ResultCount label={LABEL} count={null} />
       <BookListSkeleton />
     </>
   );
