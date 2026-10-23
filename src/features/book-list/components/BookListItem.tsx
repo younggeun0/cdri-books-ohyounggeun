@@ -2,14 +2,14 @@
 
 import { memo, useId } from "react";
 import type { Book } from "@/entities/book";
-import { useHydrated } from "@/lib/use-hydrated";
 import { buttonVariants, Button } from "@/components/Button";
 import { ChevronIcon, HeartFillIcon, HeartLineIcon } from "@/components/icons";
 import { formatWon, getDisplayPrice } from "../price";
 
 interface BookListItemProps {
   book: Book;
-  wished: boolean;
+  // undefined면 아직 찜 목록을 읽기 전이다.
+  wished: boolean | undefined;
   onToggleWish: (book: Book) => void;
 }
 
@@ -24,9 +24,9 @@ function Cover({
     : "h-[68px] w-12";
   const heartSize = expanded ? "size-6" : "size-4";
   const Heart = wished ? HeartFillIcon : HeartLineIcon;
-  // 서버와 하이드레이션 첫 렌더는 localStorage를 못 읽어 찜한 책도 빈 하트로 그린다.
-  // 틀린 상태를 잠깐 보여 주는 대신, 자리는 남긴 채 하이드레이션 뒤에 보이게 한다.
-  const hydrated = useHydrated();
+  // 찜 목록은 하이드레이션 뒤 마운트 effect에서 들어온다. 그 전에 그리면 찜한 책도 빈 하트로 보이므로,
+  // 자리는 남긴 채 목록을 읽은 뒤에 보이게 한다.
+  const loaded = wished !== undefined;
 
   return (
     <div className={`relative shrink-0 ${size}`}>
@@ -47,10 +47,10 @@ function Cover({
       )}
       <button
         type="button"
-        aria-pressed={wished}
+        aria-pressed={wished ?? false}
         aria-label={wished ? "찜 해제" : "찜하기"}
         onClick={() => onToggleWish(book)}
-        className={`absolute top-0 right-0 flex size-6 items-center justify-center ${hydrated ? "" : "invisible"}`}
+        className={`absolute top-0 right-0 flex size-6 items-center justify-center ${loaded ? "" : "invisible"}`}
       >
         <Heart
           className={`${heartSize} ${wished ? "text-red" : "text-white drop-shadow-[0_0_1px_rgb(0_0_0/0.45)]"}`}

@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
+import { createStore } from "jotai/vanilla";
 import { toBook } from "@/entities/book";
 import { KAKAO_DOCUMENTS } from "@/test/kakao-documents";
-import { parseWishlist, toggleWishlist, wishlistStore } from "./wishlist";
+import { parseWishlist, toggleWishlist, wishlistAtom } from "./wishlist";
 
 const [a, b, c] = KAKAO_DOCUMENTS.map(toBook);
 
@@ -92,26 +93,39 @@ describe("parseWishlist", () => {
   });
 });
 
-describe("wishlistStore", () => {
-  beforeEach(() => {
-    localStorage.clear();
-    wishlistStore.set([]);
-  });
+describe("wishlistAtom", () => {
+  beforeEach(() => localStorage.clear());
 
-  it("찜한 책은 localStorage에 저장되어 새로고침 뒤에도 읽힌다", () => {
-    wishlistStore.update((list) => toggleWishlist(list, a));
-    const raw: unknown = JSON.parse(
-      localStorage.getItem("cdri-books:wishlist")!,
-    );
-    expect(parseWishlist(raw)).toEqual([a]);
+  function toggleInNewStore(book: typeof a) {
+    const store = createStore();
+    store.sub(wishlistAtom, () => {});
+    store.set(wishlistAtom, (list) => toggleWishlist(list ?? [], book));
+    return store;
+  }
+
+  it("찜한 책은 localStorage에 저장되어 새 store에서도 읽힌다", () => {
+    toggleInNewStore(a);
+    const store = createStore();
+    store.sub(wishlistAtom, () => {});
+    expect(store.get(wishlistAtom)).toEqual([a]);
   });
 
   it("저장되는 항목은 Book 필드만 가진다", () => {
-    wishlistStore.update((list) => toggleWishlist(list, a));
+    toggleInNewStore(a);
     const raw = JSON.parse(localStorage.getItem("cdri-books:wishlist")!) as {
       id: string;
     }[];
     expect(raw).toHaveLength(1);
     expect(Object.keys(raw[0]).sort()).toEqual(BOOK_KEYS);
+  });
+
+  it("예전 형식으로 저장된 찜은 읽을 때 정리된다", () => {
+    localStorage.setItem(
+      "cdri-books:wishlist",
+      JSON.stringify([{ ...a, id: "9788937434488", isbn13: "9788937434488" }]),
+    );
+    const store = createStore();
+    store.sub(wishlistAtom, () => {});
+    expect(store.get(wishlistAtom)).toEqual([a]);
   });
 });

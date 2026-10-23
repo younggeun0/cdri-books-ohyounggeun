@@ -14,7 +14,7 @@ import { BookListItem } from "./BookListItem";
 
 interface BookListProps {
   books: Book[];
-  isWished: (id: string) => boolean;
+  isWished: (id: string) => boolean | undefined;
   onToggleWish: (book: Book) => void;
 }
 

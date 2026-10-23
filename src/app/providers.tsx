@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Provider as JotaiProvider } from "jotai";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
@@ -24,7 +25,8 @@ function getQueryClient() {
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={getQueryClient()}>
-      {children}
+      {/* 기본 store는 서버에서 요청 사이에 공유되므로 트리마다 store를 둔다. */}
+      <JotaiProvider>{children}</JotaiProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );

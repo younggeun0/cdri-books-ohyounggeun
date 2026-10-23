@@ -1,5 +1,6 @@
+import { atomWithStorage } from "jotai/utils";
 import { z } from "zod";
-import { createPersistentStore } from "@/lib/persistent-store";
+import { validatedJSONStorage } from "@/lib/validated-storage";
 
 export const MAX_SEARCH_HISTORY = 8;
 
@@ -26,8 +27,8 @@ export function parseSearchHistory(raw: unknown): string[] | null {
   return parsed.success ? parsed.data : null;
 }
 
-export const searchHistoryStore = createPersistentStore<string[]>(
+export const searchHistoryAtom = atomWithStorage<string[] | undefined>(
   "cdri-books:search-history",
-  [],
-  parseSearchHistory,
+  undefined,
+  validatedJSONStorage(parseSearchHistory, []),
 );
