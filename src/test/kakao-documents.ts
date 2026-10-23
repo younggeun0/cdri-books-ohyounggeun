@@ -1,4 +1,4 @@
-import type { KakaoBookDocument } from "@/lib/kakao/types";
+import type { KakaoBookDocument } from "@/lib/kakao/schema";
 
 // 실제 카카오 응답에서 관찰한 형태(할인가 있음, 판매가 없음 -1, ISBN13만 있음과 앞 공백)를 본뜬 테스트 데이터다.
 // 저자, 출판사, 표지 등 나머지 값은 테스트용이며 실제 도서 정보와 다르다.

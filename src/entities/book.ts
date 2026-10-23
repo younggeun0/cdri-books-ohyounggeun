@@ -1,9 +1,5 @@
-import {
-  KAKAO_MAX_PAGE,
-  type KakaoBookDocument,
-  type KakaoBookResponse,
-  type KakaoBookTarget,
-} from "@/lib/kakao/types";
+import type { KakaoBookDocument, KakaoBookResponse } from "@/lib/kakao/schema";
+import { KAKAO_MAX_PAGE } from "@/lib/kakao/types";
 
 export interface Book {
   id: string;
@@ -29,13 +25,20 @@ export interface BookPage {
   page: number;
 }
 
-export type SearchTarget = "all" | KakaoBookTarget;
+export const BOOK_TARGETS = ["title", "person", "publisher"] as const;
+export type BookTarget = (typeof BOOK_TARGETS)[number];
+
+export function isBookTarget(value: string): value is BookTarget {
+  return (BOOK_TARGETS as readonly string[]).includes(value);
+}
+
+export type SearchTarget = "all" | BookTarget;
 
 export const SEARCH_TARGET_LABEL = {
   title: "제목",
   person: "저자명",
   publisher: "출판사",
-} satisfies Record<KakaoBookTarget, string>;
+} satisfies Record<BookTarget, string>;
 
 export interface BookSearchParams {
   query: string;

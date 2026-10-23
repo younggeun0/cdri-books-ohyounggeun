@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { KakaoBookDocument } from "@/lib/kakao/types";
+import type { KakaoBookDocument } from "@/lib/kakao/schema";
 import { toBook, toBookPage } from "./book";
 
 const base: KakaoBookDocument = {

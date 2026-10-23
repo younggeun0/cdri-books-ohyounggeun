@@ -1,10 +1,8 @@
 import type { NextRequest } from "next/server";
-import { KakaoApiError, searchBooks } from "@/lib/kakao/search";
-import {
-  KAKAO_BOOK_TARGETS,
-  KAKAO_MAX_PAGE,
-  isKakaoBookTarget,
-} from "@/lib/kakao/types";
+import { BOOK_TARGETS, isBookTarget } from "@/entities/book";
+import { searchBookPage } from "@/features/book-search/server";
+import { KakaoApiError } from "@/lib/kakao/search";
+import { KAKAO_MAX_PAGE } from "@/lib/kakao/types";
 
 function badRequest(message: string) {
   return Response.json({ message }, { status: 400 });
@@ -18,9 +16,9 @@ export async function GET(request: NextRequest) {
   if (!query) return badRequest("query는 필수입니다.");
 
   const target = params.get("target");
-  if (target !== null && !isKakaoBookTarget(target)) {
+  if (target !== null && !isBookTarget(target)) {
     return badRequest(
-      `target은 ${KAKAO_BOOK_TARGETS.join(", ")} 중 하나여야 합니다.`,
+      `target은 ${BOOK_TARGETS.join(", ")} 중 하나여야 합니다.`,
     );
   }
 
@@ -30,14 +28,17 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await searchBooks({
-      query,
-      target: target ?? undefined,
-      page,
-    });
-    return Response.json(result);
+    return Response.json(
+      await searchBookPage({ query, target: target ?? "all" }, page),
+    );
   } catch (error) {
     if (!(error instanceof KakaoApiError)) throw error;
-    return Response.json({ message: error.message }, { status: error.status });
+    return Response.json(
+      { message: error.message },
+      {
+        status: error.status,
+        headers: error.retryAfter ? { "Retry-After": error.retryAfter } : {},
+      },
+    );
   }
 }
