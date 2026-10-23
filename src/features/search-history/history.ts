@@ -22,7 +22,7 @@ export function addSearchHistory(
   return [trimmed, ...list.filter((item) => item !== trimmed)].slice(0, max);
 }
 
-/** 목록에서 query와 정확히 같은 항목을 지운다. 저장된 값이 이미 trim되어 있으므로 query를 다시 정리하지 않는다. */
+/** 목록에서 query와 정확히 같은 항목을 지운다. query의 공백은 정리하지 않는다. */
 export function removeSearchHistory(list: string[], query: string): string[] {
   return list.filter((item) => item !== query);
 }

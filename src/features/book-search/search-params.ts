@@ -24,7 +24,7 @@ export function parseSearchParams(sp: {
 
 /**
  * 검색 조건을 URL 쿼리 문자열로 만든다. 앞의 "?"는 붙이지 않는다. 전체 검색이면 target을 넣지 않는다.
- * {@link parseSearchParams}로 다시 읽으면 같은 조건이 나온다.
+ * 앞뒤 공백이 없고 비어 있지 않은 query라면 {@link parseSearchParams}로 다시 읽었을 때 같은 조건이 나온다.
  *
  * @example
  * toSearchQueryString({ query: "react", target: "title" }); // "query=react&target=title"

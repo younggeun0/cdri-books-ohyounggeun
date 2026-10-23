@@ -24,7 +24,6 @@ type SearchScreen =
 /**
  * 검색 조건과 조회 상태로 지금 보여 줄 화면을 정한다.
  * 검색어가 비면 idle, 받은 데이터 없이 실패하면 error, 아직 받는 중이면 loading, 전체 결과가 0건이면 empty다.
- * 다음 페이지만 실패했다면 이미 받은 목록은 남겨 둔다. 화면 전체를 에러로 바꾸지 않는다.
  *
  * @returns screen과, 재시도와 다음 페이지 조회에 쓰는 조회 결과(search)
  */
@@ -32,6 +31,7 @@ function useSearchScreen(params: BookSearchParams) {
   const search = useBookSearch(params);
   const { data, error } = search;
 
+  // 다음 페이지만 실패했다면 이미 받은 목록은 남겨 둔다. 화면 전체를 에러로 바꾸지 않는다.
   let screen: SearchScreen;
   if (params.query.trim() === "") screen = { kind: "idle" };
   else if (!data && error) screen = { kind: "error", message: error.message };

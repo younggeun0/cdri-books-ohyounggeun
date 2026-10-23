@@ -75,7 +75,8 @@ export function bookSearchRetryDelay(failureCount: number, error: Error) {
 
 /**
  * 브라우저에서 /api/books를 불러 검색 결과 한 페이지를 받는다.
- * 실패 응답은 body의 message를 담은 {@link BookSearchError}로, 네트워크 실패는 status 0의 BookSearchError로 던진다.
+ * 실패 응답은 body의 message를 담은 {@link BookSearchError}로 던진다. body에 message가 없으면 "도서 검색에 실패했습니다. (status)"를 쓴다.
+ * 네트워크 실패는 status 0의 BookSearchError로 던진다.
  * signal로 취소된 요청은 원래 오류를 그대로 던진다.
  */
 export async function fetchBookPage(
