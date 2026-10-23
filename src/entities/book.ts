@@ -56,7 +56,10 @@ export const SEARCH_TARGET_LABEL = {
   publisher: "출판사",
 } satisfies Record<BookTarget, string>;
 
-/** 검색 한 번의 조건이다. URL, 쿼리 키, /api/books 요청이 모두 이 값에서 만들어진다. */
+/**
+ * 검색 한 번의 조건이다. URL, 쿼리 키, /api/books 요청이 모두 이 값에서 만들어진다.
+ * query는 앞뒤 공백이 없다. 공백은 바깥 입력이 들어오는 곳(검색 입력창, URL을 읽는 parseSearchParams, /api/books)에서만 지우고, 앱 안에서는 다시 지우지 않는다.
+ */
 export interface BookSearchParams {
   query: string;
   target: SearchTarget;

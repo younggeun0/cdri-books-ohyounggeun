@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useId } from "react";
+import { memo } from "react";
 import type { Book } from "@/entities/book";
 import { buttonVariants, Button } from "@/components/Button";
 import { ChevronIcon, HeartFillIcon, HeartLineIcon } from "@/components/icons";
@@ -81,14 +81,13 @@ function BuyLink({
   );
 }
 
+// 접힌 행과 펼친 행은 배치가 통째로 바뀌어 접힌 상태에는 가리킬 내용 영역이 없으므로, aria-controls 없이 aria-expanded로만 알린다.
 function DetailToggle({
   expanded,
-  panelId,
   onClick,
   className,
 }: {
   expanded: boolean;
-  panelId: string;
   onClick: () => void;
   className: string;
 }) {
@@ -97,7 +96,6 @@ function DetailToggle({
       variant="secondary"
       size="responsive"
       aria-expanded={expanded}
-      aria-controls={panelId}
       onClick={onClick}
       className={className}
     >
@@ -117,12 +115,11 @@ export const BookListItem = memo(function BookListItem({
   onToggleExpanded: (id: string) => void;
 }) {
   const { book } = coverProps;
-  const panelId = useId();
   const { listPrice, salePrice, displayPrice } = getDisplayPrice(book);
   const toggleExpanded = () => onToggleExpanded(book.id);
 
   return (
-    <div id={panelId}>
+    <div>
       {expanded ? (
         <div className="flex flex-col items-center gap-6 pt-6 pb-8 lg:flex-row lg:items-start lg:gap-8 lg:pt-6 lg:pr-4 lg:pb-10 lg:pl-[54px]">
           <Cover {...coverProps} expanded />
@@ -143,7 +140,6 @@ export const BookListItem = memo(function BookListItem({
           <div className="flex w-full flex-col gap-6 self-stretch lg:w-60 lg:items-end lg:justify-between">
             <DetailToggle
               expanded
-              panelId={panelId}
               onClick={toggleExpanded}
               className="w-full max-lg:order-last lg:w-[115px]"
             />
@@ -191,7 +187,6 @@ export const BookListItem = memo(function BookListItem({
               />
               <DetailToggle
                 expanded={false}
-                panelId={panelId}
                 onClick={toggleExpanded}
                 className="lg:w-[115px]"
               />

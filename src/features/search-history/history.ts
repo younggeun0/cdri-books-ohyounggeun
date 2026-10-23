@@ -35,11 +35,17 @@ export function removeSearchHistory(
 
 const searchHistorySchema = z.pipe(
   z.array(z.string()),
-  z.transform((history) => history.slice(0, MAX_SEARCH_HISTORY)),
+  z.transform((history) =>
+    [...new Set(history.map((query) => query.trim()).filter(Boolean))].slice(
+      0,
+      MAX_SEARCH_HISTORY,
+    ),
+  ),
 );
 
 /**
  * localStorage에서 읽은 최근 검색 목록을 검증한다. 앞에서부터 MAX_SEARCH_HISTORY개만 남긴다.
+ * 검색어는 화면에서 React key로 쓰므로, addSearchHistory가 지키는 규칙(앞뒤 공백 없음, 빈 검색어 없음, 중복 없음)을 읽을 때도 다시 맞춘다. 중복이면 앞의 것을 남긴다.
  * 문자열이 아닌 항목이 하나라도 있으면 목록 전체를 버리고 null을 돌려준다.
  */
 export function parseSearchHistory(raw: unknown): string[] | null {

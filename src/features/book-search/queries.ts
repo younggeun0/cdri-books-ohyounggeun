@@ -4,7 +4,7 @@ import type { BookPage, BookSearchParams } from "@/entities/book";
 
 /**
  * 도서 검색의 TanStack Query 키다. 서버 prefetch와 브라우저 조회가 이 키로 같은 캐시 항목을 쓴다.
- * search 키에는 query를 trim한 조건을 넣어야 한다. {@link bookSearchOptions}가 그렇게 만든다.
+ * search 키의 query는 앞뒤 공백이 없어야 한다. {@link BookSearchParams}가 그렇게 보장한다.
  */
 export const bookKeys = {
   all: ["books"] as const,
@@ -31,12 +31,18 @@ const errorBodySchema = z.object({ message: z.string() });
 const MAX_RETRY_DELAY_MS = 8000;
 
 /**
- * Retry-After 헤더를 ms로 바꾼다.
- * /api/books는 카카오가 준 Retry-After 원문을 그대로 전달한다. 초 단위 숫자만 해석하고, HTTP 날짜처럼 숫자가 아닌 값은 undefined로 둔다.
+ * Retry-After 헤더를 지금부터 기다릴 시간(ms)으로 바꾼다.
+ * /api/books는 카카오가 준 Retry-After 원문을 그대로 전달한다. HTTP 표준이 허용하는 두 형식(초 단위 숫자, HTTP 날짜)을 모두 해석한다.
+ * 날짜를 해석하지 못해 undefined로 두면 "Retry-After 없음"으로 보고 바로 재시도하게 되므로, 두 형식을 모두 읽는다.
+ * 해석할 수 없는 값은 undefined다.
  */
-function parseRetryAfterMs(header: string | null) {
-  const seconds = header?.trim() ? Number(header) : NaN;
-  return Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : undefined;
+export function parseRetryAfterMs(header: string | null, now = Date.now()) {
+  if (!header?.trim()) return undefined;
+  const seconds = Number(header);
+  if (Number.isFinite(seconds))
+    return seconds >= 0 ? seconds * 1000 : undefined;
+  const retryAt = Date.parse(header);
+  return Number.isNaN(retryAt) ? undefined : Math.max(0, retryAt - now);
 }
 
 /**
@@ -88,7 +94,7 @@ export async function fetchBookPage(
   signal?: AbortSignal,
 ): Promise<BookPage> {
   const apiSearchParams = new URLSearchParams({
-    query: query.trim(),
+    query,
     page: String(page),
   });
   if (target !== "all") apiSearchParams.set("target", target);
@@ -129,25 +135,20 @@ export const bookSearchOptions = (
   bookSearchParams: BookSearchParams,
   fetchPage: typeof fetchBookPage = fetchBookPage,
 ) => {
-  // 앞뒤 공백만 다른 입력이 서로 다른 캐시 항목이 되지 않도록 키를 만들기 전에 한 번만 정리한다.
-  const normalized = {
-    ...bookSearchParams,
-    query: bookSearchParams.query.trim(),
-  };
   return infiniteQueryOptions({
-    queryKey: bookKeys.search(normalized),
+    queryKey: bookKeys.search(bookSearchParams),
     queryFn: ({ pageParam, signal }) =>
-      fetchPage(normalized, pageParam, signal),
+      fetchPage(bookSearchParams, pageParam, signal),
     initialPageParam: 1,
     getNextPageParam: (lastPage) =>
       lastPage.isEnd ? undefined : lastPage.page + 1,
-    enabled: normalized.query.length > 0,
+    enabled: bookSearchParams.query !== "",
     retry: shouldRetryBookSearch,
     retryDelay: bookSearchRetryDelay,
   });
 };
 
-/** 검색 조건에 맞는 결과를 페이지 단위로 불러오는 훅이다. 조건은 {@link bookSearchOptions}가 정리한다. */
+/** 검색 조건에 맞는 결과를 페이지 단위로 불러오는 훅이다. 조회 규칙은 {@link bookSearchOptions}를 따른다. */
 export function useBookSearch(bookSearchParams: BookSearchParams) {
   return useInfiniteQuery(bookSearchOptions(bookSearchParams));
 }

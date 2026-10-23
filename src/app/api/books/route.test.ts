@@ -84,6 +84,21 @@ describe("GET /api/books", () => {
     expect(response.headers.has("Retry-After")).toBe(false);
   });
 
+  it("page 값이 비어 있으면 1페이지로 조회한다", async () => {
+    const fetchMock = stubKakao(
+      Response.json({
+        documents: [],
+        meta: { total_count: 0, pageable_count: 0, is_end: true },
+      }),
+    );
+
+    const response = await GET(booksRequest("query=a&page="));
+
+    expect(response.status).toBe(200);
+    const [requestUrl] = fetchMock.mock.calls[0] as [URL];
+    expect(requestUrl.searchParams.get("page")).toBe("1");
+  });
+
   it("query가 없으면 카카오를 부르지 않고 400을 돌려준다", async () => {
     const fetchMock = stubKakao(Response.json({}));
 

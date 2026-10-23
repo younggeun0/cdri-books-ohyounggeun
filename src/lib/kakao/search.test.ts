@@ -58,6 +58,8 @@ describe("searchBooks", () => {
   it.each([
     [401, 500, "카카오 API 키가 올바르지 않습니다."],
     [429, 429, "검색 요청이 많습니다. 잠시 후 다시 시도해 주세요."],
+    [400, 400, "검색어를 확인한 뒤 다시 검색해 주세요."],
+    [414, 400, "검색어를 확인한 뒤 다시 검색해 주세요."],
     [
       500,
       502,
@@ -128,6 +130,19 @@ describe("searchBooks", () => {
       status: 504,
       message:
         "도서 검색 응답이 늦어지고 있습니다. 잠시 후 다시 시도해 주세요.",
+    });
+  });
+
+  it("응답 본문을 읽다가 제한 시간을 넘겨도 504 에러로 바꾼다", async () => {
+    vi.stubEnv("KAKAO_REST_API_KEY", "test-key");
+    const response = new Response("{}");
+    vi.spyOn(response, "json").mockRejectedValue(
+      new DOMException("timed out", "TimeoutError"),
+    );
+    stubFetch(response);
+
+    await expect(searchBooks({ query: "a", page: 1 })).rejects.toMatchObject({
+      status: 504,
     });
   });
 });

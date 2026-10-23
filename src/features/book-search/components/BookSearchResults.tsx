@@ -33,7 +33,7 @@ function useSearchScreen(bookSearchParams: BookSearchParams) {
 
   // 다음 페이지만 실패했다면 이미 받은 목록은 남겨 둔다. 화면 전체를 에러로 바꾸지 않는다.
   let screen: SearchScreen;
-  if (bookSearchParams.query.trim() === "") screen = { kind: "idle" };
+  if (bookSearchParams.query === "") screen = { kind: "idle" };
   else if (!data && error) screen = { kind: "error", message: error.message };
   else if (!data) screen = { kind: "loading" };
   else if (data.pages[0].totalCount === 0) screen = { kind: "empty" };

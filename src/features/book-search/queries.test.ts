@@ -100,6 +100,22 @@ describe("fetchBookPage", () => {
     });
   });
 
+  it("HTTP 날짜 형식의 Retry-After도 기다릴 시간으로 바꾼다", async () => {
+    const retryAt = new Date(Date.now() + 60_000).toUTCString();
+    stubFetch(
+      Response.json(
+        { message: "m" },
+        { status: 429, headers: { "Retry-After": retryAt } },
+      ),
+    );
+    const error: Error = await fetchBookPage(bookSearchParams, 1).then(
+      () => new Error("요청이 성공하면 안 된다"),
+      (e: unknown) => e as Error,
+    );
+    // 1분 뒤를 요구하므로 8초 상한을 넘겨 재시도하지 않는다.
+    expect(shouldRetryBookSearch(0, error)).toBe(false);
+  });
+
   it("해석할 수 없는 Retry-After는 무시한다", async () => {
     stubFetch(
       Response.json(

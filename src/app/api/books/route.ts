@@ -30,7 +30,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const page = Number(searchParams.get("page") ?? "1");
+  // page=처럼 값이 비어 있어도 생략한 것과 같이 1페이지로 본다.
+  const page = Number(searchParams.get("page") || "1");
   if (!Number.isInteger(page) || page < 1 || page > KAKAO_MAX_PAGE) {
     return badRequest(`page는 1부터 ${KAKAO_MAX_PAGE} 사이의 정수여야 합니다.`);
   }
