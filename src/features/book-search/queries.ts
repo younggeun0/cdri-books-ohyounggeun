@@ -2,7 +2,10 @@ import { infiniteQueryOptions, useInfiniteQuery } from "@tanstack/react-query";
 import * as z from "zod/mini";
 import type { BookPage, BookSearchParams } from "@/entities/book";
 
-/** 도서 검색의 TanStack Query 키다. bookSearchOptions는 query를 trim한 조건으로 search 키를 만든다. */
+/**
+ * 도서 검색의 TanStack Query 키다. 서버 prefetch와 브라우저 조회가 이 키로 같은 캐시 항목을 쓴다.
+ * search 키에는 query를 trim한 조건을 넣어야 한다. {@link bookSearchOptions}가 그렇게 만든다.
+ */
 export const bookKeys = {
   all: ["books"] as const,
   search: (params: BookSearchParams) =>
@@ -24,7 +27,7 @@ export class BookSearchError extends Error {
 
 const errorBodySchema = z.object({ message: z.string() });
 
-/** 재시도 지연의 상한(ms)이다. 429의 Retry-After가 이보다 길면 재시도하지 않는다. */
+/** 재시도 전 대기 시간의 상한(ms)이다. 429의 Retry-After가 이보다 길면 재시도하지 않고, 지수 백오프도 이 값을 넘지 않는다. */
 const MAX_RETRY_DELAY_MS = 8000;
 
 /**
