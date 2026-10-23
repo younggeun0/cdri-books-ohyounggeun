@@ -7,6 +7,7 @@ import {
   BookList,
   BookListSkeleton,
 } from "@/features/book-list/components/BookList";
+import { InfiniteScrollTrigger } from "@/features/book-list/components/InfiniteScrollTrigger";
 import { useWishlist } from "@/features/wishlist/wishlist";
 import { useBookSearch } from "../queries";
 import { useBookSearchParams } from "../useBookSearchParams";
@@ -76,11 +77,27 @@ export function BookSearchResults() {
             books={screen.books}
             isWished={isWished}
             onToggleWish={toggle}
-            // 다음 페이지가 실패한 채로 트리거를 켜 두면 실패한 요청을 끝없이 다시 보낸다.
-            hasNextPage={search.hasNextPage && !search.isFetchNextPageError}
-            isFetchingNextPage={search.isFetchingNextPage}
-            onLoadMore={search.fetchNextPage}
           />
+          {/* 가상 목록은 전체 높이를 차지하므로 그 뒤의 센티널이 실제 목록 끝에 놓인다. */}
+          {/* 다음 페이지가 실패한 채로 트리거를 켜 두면 실패한 요청을 끝없이 다시 보낸다. */}
+          {search.hasNextPage && !search.isFetchNextPageError && (
+            <InfiniteScrollTrigger
+              enabled={!search.isFetchingNextPage}
+              onLoadMore={search.fetchNextPage}
+            />
+          )}
+          {search.isFetchingNextPage && (
+            <p
+              role="status"
+              className="text-body2 text-text-subtitle flex items-center justify-center gap-2 py-6"
+            >
+              <span
+                aria-hidden="true"
+                className="border-gray border-t-primary size-4 animate-spin rounded-full border-2"
+              />
+              불러오는 중
+            </p>
+          )}
           {search.isFetchNextPageError && (
             <div role="alert" className="flex flex-col items-center gap-3 py-6">
               <p className="text-body2 text-text-subtitle">
