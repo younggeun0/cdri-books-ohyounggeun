@@ -34,7 +34,7 @@ export function shouldRetryBookSearch(failureCount: number, error: Error) {
   // 취소처럼 응답 오류가 아닌 것은 재시도하지 않는다.
   if (!(error instanceof BookSearchError)) return false;
   if (error.status === 429) {
-    // 서버가 긴 대기를 요구하면 사용자를 로딩에 붙잡아 두지 않고 바로 실패로 보여 준다.
+    // Retry-After가 8초를 넘으면 그동안 로딩 화면만 보이므로, 기다리지 않고 바로 오류 화면을 보여 준다.
     return failureCount < 2 && (error.retryAfterMs ?? 0) <= MAX_RETRY_DELAY_MS;
   }
   if (error.status === 0 || error.status >= 500) return failureCount < 1;

@@ -35,8 +35,9 @@ export function parseWishlist(raw: unknown): Book[] | null {
   return [...books.values()];
 }
 
-// 찜 화면은 처음 그린 목록(snapshot)을 붙잡고, 결과 수만 저장소의 현재 값을 따른다.
-// 그래서 해제한 책도 행으로 남고, 다시 찜하면 같은 행이 하트를 되찾는다.
+// snapshot은 찜 화면에 들어온 순간의 찜 목록을 복사해 둔 배열이다.
+// 화면의 행은 이 복사본을 그대로 보여 주고, 결과 수만 저장소의 현재 찜 목록 길이를 따른다.
+// 그래서 하트를 눌러 찜을 해제해도 저장소에서만 빠지고 행은 남는다. 다시 누르면 같은 행의 하트가 채워진다.
 export function wishlistView(
   snapshot: Book[] | undefined,
   stored: Book[] | undefined,
@@ -86,14 +87,16 @@ function useShown() {
   return useSyncExternalStore(store.subscribe, store.get, () => false);
 }
 
-// 찜 화면 전용이다. 라우트가 보일 때마다 snapshot을 새로 잡는다.
+// 찜 화면 전용이다. 사용자가 찜 화면에 들어올 때마다(라우트가 다시 보일 때마다) 그 시점의 찜 목록을 snapshot으로 새로 복사한다.
 export function useWishlistView() {
   const { books, isWished, toggle } = useWishlist();
-  // useWishlist의 구독 effect가 먼저 실행되어 저장소를 다시 읽은 뒤에 shown이 켜진다. 순서를 바꾸면 이전 방문의 값으로 snapshot을 잡을 수 있다.
+  // 반드시 useWishlist 뒤에 선언한다. 훅의 effect는 선언 순서대로 실행되므로, 이렇게 두면 useWishlist가 저장소를 다시 읽은 다음에 shown이 true가 된다.
+  // 순서가 바뀌면 shown이 먼저 true가 되어, 저장소를 다시 읽기 전의 값(이전 방문 때의 목록)이 snapshot으로 복사될 수 있다.
   const shown = useShown();
   const [snapshot, setSnapshot] = useState<Book[]>();
 
-  // 숨기는 순간에 새로 잡으면 숨겨진 사이의 찜 변경이 빠지므로, 숨길 때는 비우기만 하고 잡는 것은 다시 보일 때(shown)로 미룬다.
+  // 다른 페이지로 이동해 이 라우트가 숨겨지면 snapshot을 비운다. 새 복사본은 다시 보일 때(shown이 true일 때) 만든다.
+  // 숨겨지는 순간에 바로 복사하면, 숨겨져 있는 동안 검색 화면에서 바꾼 찜이 다음 방문 때 반영되지 않는다.
   useEffect(() => () => setSnapshot(undefined), []);
 
   const view = shown ? wishlistView(snapshot, books) : undefined;

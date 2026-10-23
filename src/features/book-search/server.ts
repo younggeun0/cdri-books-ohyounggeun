@@ -23,7 +23,7 @@ export async function searchBookPage(
 }
 
 // 서버에서는 해석되지 않는 상대 경로(/api/books) 대신 카카오를 직접 부르는 조회 함수를 넣는다.
-// 재시도는 렌더를 붙잡으므로 끄고, 실패하면 클라이언트가 직접 다시 조회한다.
+// 서버에서 재시도하면 그 대기 시간만큼 페이지 렌더가 늦어진다. 그래서 끄고, 실패하면 브라우저가 /api/books로 다시 조회하게 둔다.
 export const serverBookSearchOptions = (params: BookSearchParams) => ({
   ...bookSearchOptions(params, searchBookPage),
   retry: false,
