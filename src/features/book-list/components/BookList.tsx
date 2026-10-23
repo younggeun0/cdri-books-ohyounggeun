@@ -88,6 +88,9 @@ export function BookList({ books, isWished, onToggleWish }: BookListProps) {
             key={book.id}
             ref={virtualizer.measureElement}
             data-index={index}
+            // 화면 밖 항목은 DOM에 없으므로, 스크린리더가 전체 개수와 순서를 알 수 있게 직접 알려 준다.
+            aria-setsize={books.length}
+            aria-posinset={index + 1}
             className="border-divider border-b"
             style={style}
           >
