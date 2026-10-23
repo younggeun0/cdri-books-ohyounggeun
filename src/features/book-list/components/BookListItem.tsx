@@ -3,6 +3,7 @@
 import { memo, useId } from "react";
 import type { Book } from "@/entities/book";
 import { useHydrated } from "@/lib/use-hydrated";
+import { buttonVariants, Button } from "@/components/Button";
 import { ChevronIcon, HeartFillIcon, HeartLineIcon } from "@/components/icons";
 import { formatWon, getDisplayPrice } from "../price";
 
@@ -11,9 +12,6 @@ interface BookListItemProps {
   wished: boolean;
   onToggleWish: (book: Book) => void;
 }
-
-const buttonBase =
-  "text-caption inline-flex items-center justify-center rounded-lg";
 
 function Cover({
   book,
@@ -62,13 +60,21 @@ function Cover({
   );
 }
 
-function BuyLink({ url, className }: { url: string; className: string }) {
+function BuyLink({
+  url,
+  size,
+  className,
+}: {
+  url: string;
+  size: "lg" | "responsive";
+  className: string;
+}) {
   return (
     <a
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`${buttonBase} bg-primary text-white ${className}`}
+      className={buttonVariants({ size, className })}
     >
       구매하기
     </a>
@@ -87,16 +93,17 @@ function DetailToggle({
   className: string;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="secondary"
+      size="responsive"
       aria-expanded={expanded}
       aria-controls={controls}
       onClick={onClick}
-      className={`${buttonBase} bg-light-gray text-text-secondary gap-1 ${className}`}
+      className={className}
     >
       상세보기
       <ChevronIcon direction={expanded ? "up" : "down"} className="size-3.5" />
-    </button>
+    </Button>
   );
 }
 
@@ -138,7 +145,7 @@ export const BookListItem = memo(function BookListItem({
               expanded
               controls={panelId}
               onClick={toggleExpanded}
-              className="h-10 w-full max-lg:order-last lg:h-12 lg:w-[115px]"
+              className="w-full max-lg:order-last lg:w-[115px]"
             />
             <div className="flex flex-col gap-6 lg:w-full">
               <dl className="flex flex-col gap-2 lg:items-end">
@@ -157,7 +164,7 @@ export const BookListItem = memo(function BookListItem({
                   </div>
                 )}
               </dl>
-              <BuyLink url={book.url} className="h-12 w-full" />
+              <BuyLink url={book.url} size="lg" className="w-full" />
             </div>
           </div>
         </div>
@@ -177,12 +184,16 @@ export const BookListItem = memo(function BookListItem({
               {formatWon(displayPrice)}
             </p>
             <div className="grid grid-cols-2 gap-2 lg:flex lg:shrink-0">
-              <BuyLink url={book.url} className="h-10 lg:h-12 lg:w-[115px]" />
+              <BuyLink
+                url={book.url}
+                size="responsive"
+                className="lg:w-[115px]"
+              />
               <DetailToggle
                 expanded={false}
                 controls={panelId}
                 onClick={toggleExpanded}
-                className="h-10 lg:h-12 lg:w-[115px]"
+                className="lg:w-[115px]"
               />
             </div>
           </div>
