@@ -1,8 +1,8 @@
 import type { ComponentPropsWithRef } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "@/lib/cn";
 
-// 호출부는 너비와 배치 클래스만 덧붙이고 variant·size가 정한 클래스를 덮어쓰지 않으므로 tailwind-merge는 쓰지 않는다.
-export const buttonVariants = cva(
+const variants = cva(
   "inline-flex items-center justify-center gap-1 rounded-lg",
   {
     variants: {
@@ -18,11 +18,21 @@ export const buttonVariants = cva(
         responsive: "text-caption h-10 lg:h-12",
         md: "text-body2 h-12 px-6",
         sm: "text-body2 h-10 px-4",
+        // 상세검색 팝업의 36px 버튼. 너비는 호출부가 정한다.
+        xs: "text-body2 h-9",
       },
     },
     defaultVariants: { variant: "primary", size: "lg" },
   },
 );
+
+// cva는 className을 이어 붙이기만 하므로 호출부 클래스가 variant 클래스와 충돌하면 cn으로 정리한다.
+export function buttonVariants({
+  className,
+  ...props
+}: NonNullable<Parameters<typeof variants>[0]>) {
+  return cn(variants(props), className);
+}
 
 type ButtonProps = ComponentPropsWithRef<"button"> &
   VariantProps<typeof buttonVariants>;

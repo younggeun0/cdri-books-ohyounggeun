@@ -7,6 +7,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from "react";
+import { Button } from "@/components/Button";
 import { ChevronIcon, CloseIcon } from "@/components/icons";
 import {
   BOOK_TARGETS,
@@ -67,17 +68,18 @@ export function DetailSearchPopover({
 
   return (
     <div {...popover} className="relative">
-      <button
+      <Button
         ref={toggleRef}
-        type="button"
+        variant="outline"
+        size="xs"
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-controls={dialogId}
         onClick={() => setOpen((prev) => !prev)}
-        className="text-body2 text-text-subtitle border-text-subtitle h-[35px] w-[72px] rounded-lg border bg-white"
+        className="h-[35px] w-[72px]"
       >
         상세검색
-      </button>
+      </Button>
       {open && (
         <div
           id={dialogId}
@@ -113,12 +115,9 @@ export function DetailSearchPopover({
                 className="text-body2 placeholder:text-text-subtitle border-primary h-8 min-w-0 flex-1 border-b bg-transparent outline-none"
               />
             </div>
-            <button
-              type="submit"
-              className="text-body2 bg-primary mt-4 h-9 w-full rounded-lg text-white"
-            >
+            <Button type="submit" size="xs" className="mt-4 w-full">
               검색하기
-            </button>
+            </Button>
           </form>
         </div>
       )}
