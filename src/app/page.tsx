@@ -46,7 +46,9 @@ async function PrefetchedResults({
   await connection();
   const queryClient = new QueryClient();
   // 실패해도 prefetch는 던지지 않는다. 실패한 쿼리는 dehydrate에 담기지 않아서 클라이언트가 직접 다시 조회한다.
-  await queryClient.prefetchInfiniteQuery(serverBookSearchOptions(params));
+  await queryClient
+    .infiniteQuery(serverBookSearchOptions(params))
+    .catch(() => undefined);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

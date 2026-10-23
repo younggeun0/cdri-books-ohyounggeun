@@ -4,7 +4,7 @@ import {
   useId,
   useRef,
   useState,
-  type FormEvent,
+  type SubmitEvent,
   type KeyboardEvent,
 } from "react";
 import { Button } from "@/components/Button";
@@ -55,7 +55,7 @@ export function DetailSearchPopover({
     toggleRef.current?.focus();
   }
 
-  function handleSubmit(event: FormEvent) {
+  function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
     const trimmed = query.trim();
     if (trimmed === "") {

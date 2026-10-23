@@ -4,7 +4,7 @@ import {
   useId,
   useRef,
   useState,
-  type FormEvent,
+  type SubmitEvent,
   type KeyboardEvent,
 } from "react";
 import { useAtom } from "jotai";
@@ -57,7 +57,7 @@ export function SearchBox({ initialQuery, onSearch }: SearchBoxProps) {
     setHistory((prev) => removeSearchHistory(prev ?? [], item));
   }
 
-  function handleSubmit(event: FormEvent) {
+  function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
     search(value);
   }
