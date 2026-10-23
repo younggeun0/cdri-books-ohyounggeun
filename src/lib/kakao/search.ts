@@ -2,6 +2,8 @@ import type { KakaoBookResponse, KakaoBookSearchRequest } from "./types";
 
 const KAKAO_BOOK_SEARCH_URL = "https://dapi.kakao.com/v3/search/book";
 const PAGE_SIZE = 10;
+// 서버 렌더가 카카오 응답을 기다리므로, 멈춘 요청이 화면을 붙잡지 않게 끊는다. 실측 응답은 수십 ms였다.
+const TIMEOUT_MS = 3000;
 
 export class KakaoApiError extends Error {
   constructor(
@@ -47,8 +49,14 @@ export async function searchBooks({
 
   const res = await fetch(url, {
     headers: { Authorization: `KakaoAK ${apiKey}` },
-  }).catch(() => {
-    throw toKakaoApiError(503);
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  }).catch((error: unknown) => {
+    throw error instanceof DOMException && error.name === "TimeoutError"
+      ? new KakaoApiError(
+          "도서 검색 응답이 늦어지고 있습니다. 잠시 후 다시 시도해 주세요.",
+          504,
+        )
+      : toKakaoApiError(503);
   });
   if (!res.ok) throw toKakaoApiError(res.status);
   return res.json();

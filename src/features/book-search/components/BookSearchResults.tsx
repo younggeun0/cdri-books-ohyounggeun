@@ -9,6 +9,7 @@ import {
 } from "@/features/book-list/components/BookList";
 import { useWishlist } from "@/features/wishlist/wishlist";
 import { useBookSearch } from "../queries";
+import { useBookSearchParams } from "../useBookSearchParams";
 
 const LABEL = "도서 검색 결과";
 
@@ -37,7 +38,9 @@ function useSearchScreen(params: BookSearchParams) {
   return { screen, search };
 }
 
-export function BookSearchResults({ params }: { params: BookSearchParams }) {
+// 첫 진입 뒤의 검색은 서버를 거치지 않고 URL만 바뀌므로, 검색 조건은 props가 아니라 URL에서 직접 읽는다.
+export function BookSearchResults() {
+  const [params] = useBookSearchParams();
   const { screen, search } = useSearchScreen(params);
   const { isWished, toggle } = useWishlist();
 
@@ -51,13 +54,7 @@ export function BookSearchResults({ params }: { params: BookSearchParams }) {
         </>
       );
     case "loading":
-      return (
-        <>
-          {/* 결과 수 줄이 나중에 생기면서 목록이 밀리지 않도록 같은 높이를 미리 잡는다. */}
-          <div aria-hidden="true" className="mt-6 h-6" />
-          <BookListSkeleton />
-        </>
-      );
+      return <BookSearchResultsSkeleton />;
     case "error":
       return (
         <div role="alert" className="mt-16 flex flex-col items-center gap-4">
@@ -101,4 +98,14 @@ export function BookSearchResults({ params }: { params: BookSearchParams }) {
         </>
       );
   }
+}
+
+export function BookSearchResultsSkeleton() {
+  return (
+    <>
+      {/* 결과 수 줄이 나중에 생기면서 목록이 밀리지 않도록 같은 높이를 미리 잡는다. */}
+      <div aria-hidden="true" className="mt-6 h-6" />
+      <BookListSkeleton />
+    </>
+  );
 }
