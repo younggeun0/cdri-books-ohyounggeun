@@ -1,7 +1,10 @@
 import { clsx, type ClassValue } from "clsx";
 import { extendTailwindMerge } from "tailwind-merge";
 
-/** globals.css의 @theme 토큰이다. 등록하지 않으면 text-caption(크기)과 text-white(색)을 같은 그룹으로 보고 하나를 지운다. */
+/**
+ * globals.css의 @theme 커스텀 토큰을 등록한 tailwind-merge다.
+ * 등록하지 않으면 text-caption(크기)과 text-white(색)를 같은 그룹으로 보고 하나를 지운다.
+ */
 const twMerge = extendTailwindMerge({
   extend: {
     theme: {

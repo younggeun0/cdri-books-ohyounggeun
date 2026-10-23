@@ -7,7 +7,10 @@ import { KAKAO_MAX_PAGE } from "@/lib/kakao/types";
  * 찜 목록이 localStorage에 저장하고 다시 읽는 모양이기도 하다. UI가 쓰는 필드만 둔다.
  */
 export const bookSchema = z.object({
-  /** 카카오 url. ISBN은 같은 검색 결과 안에서도 겹치는 경우가 있어(같은 책 반복, 같은 ISSN의 다른 호) id로 쓰지 않는다. */
+  /**
+   * 책을 구분하는 키다. 목록의 key와 찜 여부 확인에 쓴다. 값은 카카오 url이다.
+   * ISBN은 같은 검색 결과 안에서도 겹치는 경우가 있어(같은 책 반복, 같은 ISSN의 다른 호) id로 쓰지 않는다.
+   */
   id: z.string(),
   title: z.string(),
   authors: z.array(z.string()),

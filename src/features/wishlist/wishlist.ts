@@ -12,8 +12,8 @@ import { bookSchema, type Book } from "@/entities/book";
 import { validatedJSONStorage } from "@/lib/validated-storage";
 
 /**
- * 찜은 누른 시점의 책 스냅샷을 저장한다. API 결과가 나중에 바뀌어도 목록은 그대로 보여야 한다.
- * 같은 id가 있으면 빼고, 없으면 맨 앞에 넣는다.
+ * 하트를 눌렀을 때 찜 목록에서 책을 넣거나 뺀다. 같은 id가 있으면 빼고, 없으면 맨 앞에 넣는다.
+ * 넣을 때는 누른 시점의 Book을 통째로 저장한다. API 결과가 나중에 바뀌어도 찜 목록은 그대로 보여야 한다.
  */
 export function toggleWishlist(list: Book[], book: Book): Book[] {
   return list.some((item) => item.id === book.id)
@@ -21,15 +21,18 @@ export function toggleWishlist(list: Book[], book: Book): Book[] {
     : [book, ...list];
 }
 
-/** id는 저장된 값을 믿지 않고 url에서 다시 만든다. 예전 ISBN 기반 id와 불필요한 필드는 읽는 순간 정리된다. */
+/**
+ * localStorage에 저장된 찜 항목 하나를 Book으로 읽는 스키마다.
+ * id는 저장된 값을 믿지 않고 url에서 다시 만들고, Book에 없는 필드는 버린다. 그래서 예전 ISBN 기반 id로 저장된 항목도 읽는 순간 정리된다.
+ */
 const storedBookSchema = z.pipe(
   z.omit(bookSchema, { id: true }),
   z.transform((book): Book => ({ id: book.url, ...book })),
 );
 
 /**
- * localStorage는 외부 입력이라, 깨진 항목은 버리고 같은 책(id)은 처음 것만 남긴다.
- * 배열이 아니면 null을 돌려준다.
+ * localStorage에서 읽은 찜 목록을 검증해 Book 배열로 돌려준다. 배열이 아니면 null이다.
+ * localStorage는 외부 입력이라, 깨진 항목은 그 항목만 버리고 같은 책(id)은 처음 것만 남긴다.
  */
 export function parseWishlist(raw: unknown): Book[] | null {
   if (!Array.isArray(raw)) return null;
@@ -44,6 +47,7 @@ export function parseWishlist(raw: unknown): Book[] | null {
 }
 
 /**
+ * 찜 화면에 보여 줄 행과 결과 수를 정한다.
  * snapshot은 찜 화면에 들어온 순간의 찜 목록을 복사해 둔 배열이다.
  * 화면의 행은 이 복사본을 그대로 보여 주고, 결과 수만 저장소의 현재 찜 목록 길이를 따른다.
  * 그래서 하트를 눌러 찜을 해제해도 저장소에서만 빠지고 행은 남는다. 다시 누르면 같은 행의 하트가 채워진다.

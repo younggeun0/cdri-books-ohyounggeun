@@ -47,7 +47,10 @@ function useSearchScreen(params: BookSearchParams) {
   return { screen, search };
 }
 
-/** 첫 진입 뒤의 검색은 서버를 거치지 않고 URL만 바뀌므로, 검색 조건은 props가 아니라 URL에서 직접 읽는다. */
+/**
+ * 검색 화면의 결과 영역이다. 결과 수, 책 목록, 무한 스크롤, 오류와 재시도를 그린다.
+ * 첫 진입 뒤의 검색은 서버를 거치지 않고 URL만 바뀌므로, 검색 조건은 props가 아니라 URL에서 직접 읽는다.
+ */
 export function BookSearchResults() {
   const [params] = useBookSearchParams();
   const { screen, search } = useSearchScreen(params);

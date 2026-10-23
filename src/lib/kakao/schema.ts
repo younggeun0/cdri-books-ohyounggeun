@@ -1,8 +1,8 @@
 import * as z from "zod/mini";
 
 /**
- * 카카오 책 검색 API(v3/search/book)의 원본 응답 모양. UI에서 직접 import하지 않고 서버에서 entities/book.ts의 변환을 거친다.
- * 카카오가 필드를 추가해도 깨지지 않도록 strict가 아닌 object를 쓰고, 변환이 읽는 필드만 검증한다.
+ * 카카오 책 검색 API(v3/search/book) 응답의 documents 한 건을 검증하는 스키마다. entities/book.ts의 toBook이 읽는 필드만 검증한다.
+ * 카카오가 필드를 추가해도 깨지지 않도록 strict가 아닌 object를 쓴다.
  */
 const kakaoBookDocumentSchema = z.object({
   title: z.string(),

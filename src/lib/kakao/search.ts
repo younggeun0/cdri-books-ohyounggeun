@@ -2,7 +2,7 @@ import type { BookTarget } from "@/entities/book";
 import { kakaoBookResponseSchema, type KakaoBookResponse } from "./schema";
 
 const KAKAO_BOOK_SEARCH_URL = "https://dapi.kakao.com/v3/search/book";
-/** 한 페이지에 받는 책 수다. */
+/** 카카오에 size로 보내는 페이지당 책 수다. 시안이 페이지당 10개를 요구한다. */
 const PAGE_SIZE = 10;
 /**
  * 카카오 요청 제한 시간(ms)이다.
@@ -33,8 +33,8 @@ export class KakaoApiError extends Error {
 }
 
 /**
+ * 카카오의 실패 상태 코드를 {@link KakaoApiError}로 바꾼다. 401과 403은 키 문제라 500, 429는 Retry-After와 함께 429, 나머지는 모두 502다.
  * 카카오 응답 코드를 그대로 노출하지 않고, 사용자가 할 수 있는 행동 기준으로 문구와 상태를 정한다.
- * 401과 403은 키 문제라 500, 429는 Retry-After와 함께 429, 나머지는 모두 502가 된다.
  */
 function toKakaoApiError(status: number, retryAfter?: string) {
   if (status === 401 || status === 403) {
@@ -54,16 +54,14 @@ function toKakaoApiError(status: number, retryAfter?: string) {
 }
 
 /**
- * 카카오 책 검색 API를 한 번 호출하고, 검증한 원본 응답을 돌려준다. 재시도는 하지 않는다.
+ * 카카오 책 검색 API를 한 번 호출하고, 검증한 원본 응답을 돌려준다. target을 생략하면 카카오의 전체 검색이 된다. 재시도는 하지 않는다.
  *
  * 실패는 모두 {@link KakaoApiError}로 던진다.
  * - KAKAO_REST_API_KEY가 없거나, 카카오가 401 또는 403을 주면 500
  * - 카카오가 429를 주면 429. Retry-After 원문을 retryAfter에 담는다.
  * - 3초 안에 응답이 없으면 504
- * - 응답을 받기 전에 네트워크 오류가 나면 502. toKakaoApiError(503)로 부르지만 503은 401, 403, 429가 아니라서 502가 된다.
+ * - 응답을 받기 전에 네트워크 오류가 나면 502
  * - 그 밖의 실패 응답, JSON이 아니거나 스키마와 다른 응답이면 502
- *
- * target을 생략하면 카카오의 전체 검색이 된다.
  */
 export async function searchBooks({
   query,
@@ -85,6 +83,7 @@ export async function searchBooks({
     headers: { Authorization: `KakaoAK ${apiKey}` },
     signal: AbortSignal.timeout(TIMEOUT_MS),
   }).catch((error: unknown) => {
+    // 타임아웃이 아닌 네트워크 오류는 503으로 넘긴다. 503은 401, 403, 429가 아니라서 502가 된다.
     throw error instanceof DOMException && error.name === "TimeoutError"
       ? new KakaoApiError(
           "도서 검색 응답이 늦어지고 있습니다. 잠시 후 다시 시도해 주세요.",
