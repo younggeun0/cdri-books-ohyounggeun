@@ -18,8 +18,10 @@ interface BookListProps {
   onToggleWish: (book: Book) => void;
 }
 
-// 접힌 항목의 실측 최대 높이다. 1024px 미만은 세로로 쌓이고 제목이 두 줄까지 늘어 더 높다.
-// 재기 전 추정이 실제보다 작으면 스크롤 중에 행이 잠깐 겹치므로 최댓값을 쓴다. 실제 높이는 measureElement가 다시 잰다.
+/**
+ * 가상 목록이 행을 재기 전에 쓰는 높이(px)다. 접힌 항목의 실측 최대 높이다. 1024px 미만은 세로로 쌓이고 제목이 두 줄까지 늘어 더 높다.
+ * 재기 전 추정이 실제보다 작으면 스크롤 중에 행이 잠깐 겹치므로 최댓값을 쓴다. 실제 높이는 measureElement가 다시 잰다.
+ */
 const estimateRowHeight = () => (window.innerWidth >= 1024 ? 101 : 187);
 
 export function BookList({ books, isWished, onToggleWish }: BookListProps) {

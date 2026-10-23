@@ -8,7 +8,7 @@ import { formatWon, getDisplayPrice } from "../price";
 
 interface BookListItemProps {
   book: Book;
-  // undefined면 아직 찜 목록을 읽기 전이다.
+  /** undefined면 아직 찜 목록을 읽기 전이다. */
   wished: boolean | undefined;
   onToggleWish: (book: Book) => void;
 }
