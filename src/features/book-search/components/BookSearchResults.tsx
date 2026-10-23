@@ -1,6 +1,7 @@
 "use client";
 
 import type { Book, BookSearchParams } from "@/entities/book";
+import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { ResultCount } from "@/components/ResultCount";
 import {
@@ -60,13 +61,9 @@ export function BookSearchResults() {
       return (
         <div role="alert" className="mt-16 flex flex-col items-center gap-4">
           <p className="text-caption text-text-secondary">{screen.message}</p>
-          <button
-            type="button"
-            onClick={() => search.refetch()}
-            className="text-body2 bg-primary h-12 rounded-lg px-6 text-white"
-          >
+          <Button size="md" onClick={() => search.refetch()}>
             다시 시도
-          </button>
+          </Button>
         </div>
       );
     case "results":
@@ -103,13 +100,13 @@ export function BookSearchResults() {
               <p className="text-body2 text-text-subtitle">
                 다음 페이지를 불러오지 못했습니다.
               </p>
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => search.fetchNextPage()}
-                className="text-body2 border-gray h-10 rounded-lg border px-4"
               >
                 다시 시도
-              </button>
+              </Button>
             </div>
           )}
         </>
