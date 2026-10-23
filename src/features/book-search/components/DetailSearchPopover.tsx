@@ -1,12 +1,28 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import {
+  useId,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 import { ChevronIcon, CloseIcon } from "@/components/icons";
 import {
   BOOK_TARGETS,
   SEARCH_TARGET_LABEL,
   type BookTarget,
 } from "@/entities/book";
+import { ARROW_MOVES, moveIndex, type ListMove } from "../listbox";
+import { useDismiss } from "../useDismiss";
+
+const TARGET_MOVES: Partial<Record<string, ListMove>> = {
+  ...ARROW_MOVES,
+  Home: "first",
+  End: "last",
+};
+
+const SELECT_OPEN_KEYS = new Set(["ArrowDown", "ArrowUp", "Enter", " "]);
 
 export interface DetailSearchValue {
   target: BookTarget;
@@ -23,38 +39,15 @@ export function DetailSearchPopover({
   onSearch,
 }: DetailSearchPopoverProps) {
   const [open, setOpen] = useState(false);
-  const [selectOpen, setSelectOpen] = useState(false);
   const [target, setTarget] = useState(initial.target);
   const [query, setQuery] = useState(initial.query);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const selectRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogId = useId();
-
-  useEffect(() => {
-    if (!open) return;
-    function onPointerDown(event: PointerEvent) {
-      const node = event.target as Node;
-      if (!rootRef.current?.contains(node)) setOpen(false);
-      else if (!selectRef.current?.contains(node)) setSelectOpen(false);
-    }
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      if (selectOpen) {
-        setSelectOpen(false);
-      } else {
-        setOpen(false);
-        toggleRef.current?.focus();
-      }
-    }
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open, selectOpen]);
+  const popover = useDismiss<HTMLDivElement>(open, (reason) => {
+    if (reason === "escape") close();
+    else setOpen(false);
+  });
 
   function close() {
     setOpen(false);
@@ -73,99 +66,147 @@ export function DetailSearchPopover({
   }
 
   return (
-    <div ref={rootRef} className="relative">
+    <div {...popover} className="relative">
       <button
         ref={toggleRef}
         type="button"
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-controls={dialogId}
-        onClick={() => {
-          setOpen((prev) => !prev);
-          // 바깥 클릭이나 Esc로 닫힌 팝업이 셀렉트가 열린 채로 다시 열리지 않게 한다.
-          setSelectOpen(false);
-        }}
+        onClick={() => setOpen((prev) => !prev)}
         className="text-body2 text-text-subtitle border-text-subtitle h-[35px] w-[72px] rounded-lg border bg-white"
       >
         상세검색
       </button>
       {open && (
-        <form
+        <div
           id={dialogId}
           role="dialog"
           aria-label="상세검색"
-          onSubmit={handleSubmit}
           className="absolute top-full right-0 z-30 mt-2 w-[min(360px,calc(100vw-32px))] rounded-lg bg-white px-6 py-9 shadow-[0_4px_14px_rgba(0,0,0,0.15)] md:right-auto md:left-1/2 md:-translate-x-1/2"
         >
-          <button
-            type="button"
-            aria-label="상세검색 닫기"
-            onClick={close}
-            className="text-text-subtitle absolute top-2 right-2 p-0.5"
-          >
-            <CloseIcon className="size-5" />
-          </button>
-          <div className="flex items-end gap-2">
-            <div ref={selectRef} className="relative w-[100px] shrink-0">
-              <button
-                type="button"
-                aria-haspopup="listbox"
-                aria-expanded={selectOpen}
-                aria-label={`검색 조건 ${SEARCH_TARGET_LABEL[target]}`}
-                onClick={() => setSelectOpen((prev) => !prev)}
-                className="text-body2-bold border-gray flex h-8 w-full items-center justify-between border-b text-left"
-              >
-                {SEARCH_TARGET_LABEL[target]}
-                <ChevronIcon
-                  direction="down"
-                  className="text-text-subtitle size-4"
-                />
-              </button>
-              {selectOpen && (
-                <ul
-                  role="listbox"
-                  aria-label="검색 조건"
-                  className="absolute inset-x-0 top-full z-10 bg-white shadow-[0_4px_14px_rgba(0,0,0,0.15)]"
-                >
-                  {BOOK_TARGETS.filter((item) => item !== target).map(
-                    (item) => (
-                      <li key={item} role="option" aria-selected={false}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setTarget(item);
-                            setSelectOpen(false);
-                            inputRef.current?.focus();
-                          }}
-                          className="text-body2 text-text-subtitle h-[30px] w-full px-1 text-left"
-                        >
-                          {SEARCH_TARGET_LABEL[item]}
-                        </button>
-                      </li>
-                    ),
-                  )}
-                </ul>
-              )}
+          <form onSubmit={handleSubmit}>
+            <button
+              type="button"
+              aria-label="상세검색 닫기"
+              onClick={close}
+              className="text-text-subtitle absolute top-2 right-2 p-0.5"
+            >
+              <CloseIcon className="size-5" />
+            </button>
+            <div className="flex items-end gap-2">
+              <TargetSelect
+                value={target}
+                onChange={(item) => {
+                  setTarget(item);
+                  inputRef.current?.focus();
+                }}
+              />
+              <input
+                ref={inputRef}
+                type="text"
+                autoFocus
+                aria-label="상세검색어"
+                placeholder="검색어 입력"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                className="text-body2 placeholder:text-text-subtitle border-primary h-8 min-w-0 flex-1 border-b bg-transparent outline-none"
+              />
             </div>
-            <input
-              ref={inputRef}
-              type="text"
-              autoFocus
-              aria-label="상세검색어"
-              placeholder="검색어 입력"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              className="text-body2 placeholder:text-text-subtitle border-primary h-8 min-w-0 flex-1 border-b bg-transparent outline-none"
-            />
-          </div>
-          <button
-            type="submit"
-            className="text-body2 bg-primary mt-4 h-9 w-full rounded-lg text-white"
-          >
-            검색하기
-          </button>
-        </form>
+            <button
+              type="submit"
+              className="text-body2 bg-primary mt-4 h-9 w-full rounded-lg text-white"
+            >
+              검색하기
+            </button>
+          </form>
+        </div>
       )}
+    </div>
+  );
+}
+
+interface TargetSelectProps {
+  value: BookTarget;
+  onChange: (value: BookTarget) => void;
+}
+
+// APG select-only combobox. 팝업과 함께 unmount되므로 다시 열면 항상 닫힌 상태로 시작한다.
+function TargetSelect({ value, onChange }: TargetSelectProps) {
+  // null이면 목록이 닫힌 상태다.
+  const [active, setActive] = useState<number | null>(null);
+  const listboxId = useId();
+  const optionId = (index: number) => `${listboxId}-${index}`;
+  const expanded = active !== null;
+  const dismiss = useDismiss<HTMLDivElement>(expanded, () => setActive(null));
+
+  function expand() {
+    setActive(BOOK_TARGETS.indexOf(value));
+  }
+
+  function choose(item: BookTarget) {
+    setActive(null);
+    onChange(item);
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (active === null) {
+      if (!SELECT_OPEN_KEYS.has(event.key)) return;
+      event.preventDefault();
+      expand();
+      return;
+    }
+    const move = TARGET_MOVES[event.key];
+    if (move) {
+      event.preventDefault();
+      setActive(moveIndex(active, BOOK_TARGETS.length, move, false));
+    } else if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      choose(BOOK_TARGETS[active]);
+    }
+  }
+
+  return (
+    <div {...dismiss} className="relative w-[100px] shrink-0">
+      <div
+        role="combobox"
+        tabIndex={0}
+        aria-haspopup="listbox"
+        aria-expanded={expanded}
+        aria-controls={listboxId}
+        aria-activedescendant={expanded ? optionId(active) : undefined}
+        aria-label={`검색 조건 ${SEARCH_TARGET_LABEL[value]}`}
+        onClick={() => (expanded ? setActive(null) : expand())}
+        onKeyDown={handleKeyDown}
+        className="text-body2-bold border-gray flex h-8 w-full cursor-pointer items-center justify-between border-b"
+      >
+        {SEARCH_TARGET_LABEL[value]}
+        <ChevronIcon direction="down" className="text-text-subtitle size-4" />
+      </div>
+      {/* 항목을 눌러도 포커스가 조건 선택에 남아야 포커스 이탈로 닫히지 않는다. */}
+      <ul
+        id={listboxId}
+        role="listbox"
+        aria-label="검색 조건"
+        hidden={!expanded}
+        onMouseDown={(event) => event.preventDefault()}
+        className="absolute inset-x-0 top-full z-10 bg-white shadow-[0_4px_14px_rgba(0,0,0,0.15)]"
+      >
+        {BOOK_TARGETS.map((item, index) => (
+          <li
+            key={item}
+            id={optionId(index)}
+            role="option"
+            aria-selected={index === active}
+            onClick={() => choose(item)}
+            className={`text-body2 aria-selected:bg-light-gray flex h-[30px] cursor-pointer items-center px-1 ${
+              item === value ? "text-text-primary" : "text-text-subtitle"
+            }`}
+          >
+            {SEARCH_TARGET_LABEL[item]}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
