@@ -77,6 +77,40 @@ describe("searchBooks", () => {
     },
   );
 
+  it("429의 Retry-After 헤더를 에러에 담는다", async () => {
+    vi.stubEnv("KAKAO_REST_API_KEY", "test-key");
+    stubFetch(
+      new Response(null, { status: 429, headers: { "Retry-After": "7" } }),
+    );
+
+    await expect(searchBooks({ query: "a", page: 1 })).rejects.toMatchObject({
+      status: 429,
+      retryAfter: "7",
+    });
+  });
+
+  it.each([
+    ["필수 필드가 빠진 응답", Response.json({ meta: {}, documents: [{}] })],
+    [
+      "documents가 배열이 아닌 응답",
+      Response.json({ ...okResponse, documents: "x" }),
+    ],
+    ["JSON이 아닌 응답", new Response("<html>", { status: 200 })],
+  ])("%s은 502 에러로 바꾼다", async (_, response) => {
+    vi.stubEnv("KAKAO_REST_API_KEY", "test-key");
+    stubFetch(response);
+
+    const error = await searchBooks({ query: "a", page: 1 }).catch(
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(KakaoApiError);
+    expect(error).toMatchObject({
+      status: 502,
+      message:
+        "도서 검색 서비스에 일시적인 문제가 있습니다. 잠시 후 다시 시도해 주세요.",
+    });
+  });
+
   it("카카오에 연결하지 못하면 502 에러로 바꾼다", async () => {
     vi.stubEnv("KAKAO_REST_API_KEY", "test-key");
     stubFetch(new TypeError("fetch failed"));

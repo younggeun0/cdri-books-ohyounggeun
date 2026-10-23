@@ -1,23 +1,30 @@
 import "server-only";
-import { toBookPage } from "@/entities/book";
-import type { BookSearchParams } from "@/entities/book";
+import {
+  toBookPage,
+  type BookPage,
+  type BookSearchParams,
+} from "@/entities/book";
 import { searchBooks } from "@/lib/kakao/search";
 import { bookSearchOptions } from "./queries";
 
-// 키와 페이징은 클라이언트와 같은 옵션을 그대로 쓰고, 서버에서는 해석되지 않는 상대 경로(/api/books) 대신 Kakao를 직접 부르는 queryFn만 바꾼다.
-export const serverBookSearchOptions = (params: BookSearchParams) => {
-  const options = bookSearchOptions(params);
-  const { query, target } = options.queryKey[2];
-  return {
-    ...options,
-    queryFn: async ({ pageParam }: { pageParam: number }) =>
-      toBookPage(
-        await searchBooks({
-          query,
-          target: target === "all" ? undefined : target,
-          page: pageParam,
-        }),
-        pageParam,
-      ),
-  };
-};
+// 카카오 응답을 BookPage로 바꾸는 유일한 곳이다. /api/books와 서버 prefetch가 함께 쓴다.
+export async function searchBookPage(
+  { query, target }: BookSearchParams,
+  page: number,
+): Promise<BookPage> {
+  return toBookPage(
+    await searchBooks({
+      query,
+      target: target === "all" ? undefined : target,
+      page,
+    }),
+    page,
+  );
+}
+
+// 서버에서는 해석되지 않는 상대 경로(/api/books) 대신 카카오를 직접 부르는 조회 함수를 넣는다.
+// 재시도는 렌더를 붙잡으므로 끄고, 실패하면 클라이언트가 직접 다시 조회한다.
+export const serverBookSearchOptions = (params: BookSearchParams) => ({
+  ...bookSearchOptions(params, searchBookPage),
+  retry: false,
+});

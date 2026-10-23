@@ -2,11 +2,14 @@
 
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { ChevronIcon, CloseIcon } from "@/components/icons";
-import { SEARCH_TARGET_LABEL } from "@/entities/book";
-import { KAKAO_BOOK_TARGETS, type KakaoBookTarget } from "@/lib/kakao/types";
+import {
+  BOOK_TARGETS,
+  SEARCH_TARGET_LABEL,
+  type BookTarget,
+} from "@/entities/book";
 
 export interface DetailSearchValue {
-  target: KakaoBookTarget;
+  target: BookTarget;
   query: string;
 }
 
@@ -124,7 +127,7 @@ export function DetailSearchPopover({
                   aria-label="검색 조건"
                   className="absolute inset-x-0 top-full z-10 bg-white shadow-[0_4px_14px_rgba(0,0,0,0.15)]"
                 >
-                  {KAKAO_BOOK_TARGETS.filter((item) => item !== target).map(
+                  {BOOK_TARGETS.filter((item) => item !== target).map(
                     (item) => (
                       <li key={item} role="option" aria-selected={false}>
                         <button
