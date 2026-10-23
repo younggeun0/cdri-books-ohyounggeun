@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod/mini";
 import type { KakaoBookDocument, KakaoBookResponse } from "@/lib/kakao/schema";
 import { KAKAO_MAX_PAGE } from "@/lib/kakao/types";
 
@@ -11,8 +11,8 @@ export const bookSchema = z.object({
   contents: z.string(),
   url: z.string(),
   price: z.number(),
-  salePrice: z.number().nullable(),
-  thumbnail: z.string().nullable(),
+  salePrice: z.nullable(z.number()),
+  thumbnail: z.nullable(z.string()),
 });
 
 export type Book = z.infer<typeof bookSchema>;

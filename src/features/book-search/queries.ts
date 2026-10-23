@@ -1,5 +1,5 @@
 import { infiniteQueryOptions, useInfiniteQuery } from "@tanstack/react-query";
-import { z } from "zod";
+import * as z from "zod/mini";
 import type { BookPage, BookSearchParams } from "@/entities/book";
 
 export const bookKeys = {

@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
+import * as z from "zod/mini";
 import { bookSchema, type Book } from "@/entities/book";
 import { validatedJSONStorage } from "@/lib/validated-storage";
 
@@ -18,9 +19,10 @@ export function toggleWishlist(list: Book[], book: Book): Book[] {
 }
 
 // id는 저장된 값을 믿지 않고 url에서 다시 만든다. 예전 ISBN 기반 id와 불필요한 필드는 읽는 순간 정리된다.
-const storedBookSchema = bookSchema
-  .omit({ id: true })
-  .transform((book): Book => ({ id: book.url, ...book }));
+const storedBookSchema = z.pipe(
+  z.omit(bookSchema, { id: true }),
+  z.transform((book): Book => ({ id: book.url, ...book })),
+);
 
 // localStorage는 외부 입력이라, 깨진 항목은 버리고 같은 책(id)은 처음 것만 남긴다.
 export function parseWishlist(raw: unknown): Book[] | null {
