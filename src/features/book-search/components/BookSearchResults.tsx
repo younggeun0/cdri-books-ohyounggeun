@@ -93,7 +93,7 @@ export function BookSearchResults() {
               >
                 <span
                   aria-hidden="true"
-                  className="border-gray border-t-primary size-4 animate-spin rounded-full border-2"
+                  className="border-gray border-t-primary size-4 rounded-full border-2 motion-safe:animate-spin"
                 />
                 불러오는 중
               </p>
