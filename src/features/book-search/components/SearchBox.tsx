@@ -1,11 +1,12 @@
 "use client";
 
 import { useRef, useState, type FocusEvent, type FormEvent } from "react";
+import { useAtom } from "jotai";
 import { CloseIcon, SearchIcon } from "@/components/icons";
 import {
   addSearchHistory,
   removeSearchHistory,
-  searchHistoryStore,
+  searchHistoryAtom,
 } from "@/features/search-history/history";
 
 interface SearchBoxProps {
@@ -14,7 +15,8 @@ interface SearchBoxProps {
 }
 
 export function SearchBox({ initialQuery, onSearch }: SearchBoxProps) {
-  const history = searchHistoryStore.useValue();
+  const [stored, setHistory] = useAtom(searchHistoryAtom);
+  const history = stored ?? [];
   const [value, setValue] = useState(initialQuery);
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -24,7 +26,7 @@ export function SearchBox({ initialQuery, onSearch }: SearchBoxProps) {
     const query = raw.trim();
     if (query === "") return;
     setValue(query);
-    searchHistoryStore.update((prev) => addSearchHistory(prev, query));
+    setHistory((prev) => addSearchHistory(prev ?? [], query));
     onSearch(query);
     // 키보드로 기록 항목에서 실행한 경우에도 목록이 닫히도록 포커스 상태를 직접 내린다.
     setFocused(false);
@@ -93,9 +95,7 @@ export function SearchBox({ initialQuery, onSearch }: SearchBoxProps) {
                   type="button"
                   aria-label={`${item} 검색 기록 삭제`}
                   onClick={() =>
-                    searchHistoryStore.update((prev) =>
-                      removeSearchHistory(prev, item),
-                    )
+                    setHistory((prev) => removeSearchHistory(prev ?? [], item))
                   }
                   className="text-text-primary shrink-0 p-0.5"
                 >

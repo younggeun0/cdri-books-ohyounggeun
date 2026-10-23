@@ -1,6 +1,8 @@
 import { useCallback, useMemo } from "react";
+import { useAtom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
 import { bookSchema, type Book } from "@/entities/book";
-import { createPersistentStore } from "@/lib/persistent-store";
+import { validatedJSONStorage } from "@/lib/validated-storage";
 
 // 찜은 누른 시점의 책 스냅샷을 저장한다. API 결과가 나중에 바뀌어도 목록은 그대로 보여야 한다.
 export function toggleWishlist(list: Book[], book: Book): Book[] {
@@ -27,21 +29,23 @@ export function parseWishlist(raw: unknown): Book[] | null {
   return [...books.values()];
 }
 
-export const wishlistStore = createPersistentStore<Book[]>(
+export const wishlistAtom = atomWithStorage<Book[] | undefined>(
   "cdri-books:wishlist",
-  [],
-  parseWishlist,
+  undefined,
+  validatedJSONStorage(parseWishlist, []),
 );
 
-const toggle = (book: Book) =>
-  wishlistStore.update((list) => toggleWishlist(list, book));
-
+// books와 isWished는 atom의 마운트 effect가 저장소를 읽기 전까지(서버 렌더 포함) undefined다.
 export function useWishlist() {
-  const books = wishlistStore.useValue();
+  const [books, setBooks] = useAtom(wishlistAtom);
   const wishedIds = useMemo(
-    () => new Set(books.map((book) => book.id)),
+    () => books && new Set(books.map((book) => book.id)),
     [books],
   );
-  const isWished = useCallback((id: string) => wishedIds.has(id), [wishedIds]);
+  const isWished = useCallback((id: string) => wishedIds?.has(id), [wishedIds]);
+  const toggle = useCallback(
+    (book: Book) => setBooks((list) => toggleWishlist(list ?? [], book)),
+    [setBooks],
+  );
   return { books, isWished, toggle };
 }
