@@ -60,6 +60,13 @@ describe("parseSearchHistory", () => {
     expect(parseSearchHistory(null)).toBeNull();
   });
 
+  it("저장된 값의 공백, 빈 검색어, 중복을 addSearchHistory와 같은 규칙으로 정리한다", () => {
+    expect(parseSearchHistory([" react ", "react", " ", "vue"])).toEqual([
+      "react",
+      "vue",
+    ]);
+  });
+
   it("저장된 값이 최대 개수를 넘으면 앞에서 8개만 읽는다", () => {
     const stored = Array.from({ length: 10 }, (_, i) => String(i));
     expect(parseSearchHistory(stored)).toEqual(stored.slice(0, 8));

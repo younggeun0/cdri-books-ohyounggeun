@@ -33,7 +33,7 @@ export class KakaoApiError extends Error {
 }
 
 /**
- * 카카오의 실패 상태 코드를 {@link KakaoApiError}로 바꾼다. 401과 403은 키 문제라 500, 429는 Retry-After와 함께 429, 나머지는 모두 502다.
+ * 카카오의 실패 상태 코드를 {@link KakaoApiError}로 바꾼다. 401과 403은 키 문제라 500, 429는 Retry-After와 함께 429, 그 밖의 4xx는 요청 내용 문제라 400, 나머지는 모두 502다.
  * 카카오 응답 코드를 그대로 노출하지 않고, 사용자가 할 수 있는 행동 기준으로 문구와 상태를 정한다.
  */
 function toKakaoApiError(status: number, retryAfter?: string) {
@@ -47,9 +47,24 @@ function toKakaoApiError(status: number, retryAfter?: string) {
       retryAfter,
     );
   }
+  // 너무 긴 검색어(414)처럼 같은 요청을 다시 보내도 실패하는 경우다. 400이면 클라이언트가 재시도하지 않는다.
+  if (status >= 400 && status < 500) {
+    return new KakaoApiError("검색어를 확인한 뒤 다시 검색해 주세요.", 400);
+  }
   return new KakaoApiError(
     "도서 검색 서비스에 일시적인 문제가 있습니다. 잠시 후 다시 시도해 주세요.",
     502,
+  );
+}
+
+function isTimeout(error: unknown) {
+  return error instanceof DOMException && error.name === "TimeoutError";
+}
+
+function timeoutError() {
+  return new KakaoApiError(
+    "도서 검색 응답이 늦어지고 있습니다. 잠시 후 다시 시도해 주세요.",
+    504,
   );
 }
 
@@ -59,7 +74,8 @@ function toKakaoApiError(status: number, retryAfter?: string) {
  * 실패는 모두 {@link KakaoApiError}로 던진다.
  * - KAKAO_REST_API_KEY가 없거나, 카카오가 401 또는 403을 주면 500
  * - 카카오가 429를 주면 429. Retry-After 원문을 retryAfter에 담는다.
- * - 3초 안에 응답이 없으면 504
+ * - 카카오가 그 밖의 4xx를 주면 400(예: 검색어가 너무 길어 414)
+ * - 3초 안에 응답 본문까지 받지 못하면 504
  * - 응답을 받기 전에 네트워크 오류가 나면 502
  * - 그 밖의 실패 응답, JSON이 아니거나 스키마와 다른 응답이면 502
  */
@@ -84,12 +100,7 @@ export async function searchBooks({
     signal: AbortSignal.timeout(KAKAO_REQUEST_TIMEOUT_MS),
   }).catch((error: unknown) => {
     // 타임아웃이 아닌 네트워크 오류는 503으로 넘긴다. 503은 401, 403, 429가 아니라서 502가 된다.
-    throw error instanceof DOMException && error.name === "TimeoutError"
-      ? new KakaoApiError(
-          "도서 검색 응답이 늦어지고 있습니다. 잠시 후 다시 시도해 주세요.",
-          504,
-        )
-      : toKakaoApiError(503);
+    throw isTimeout(error) ? timeoutError() : toKakaoApiError(503);
   });
   if (!response.ok) {
     throw toKakaoApiError(
@@ -98,8 +109,12 @@ export async function searchBooks({
     );
   }
   // 형태가 다른 응답(스키마 변경, 프록시가 준 HTML 등)이 변환 단계에서 터지지 않도록 여기서 막는다.
+  // 제한 시간은 본문을 읽는 동안에도 적용되므로, 본문을 읽다 끊긴 경우도 504로 본다.
   const parsed = kakaoBookResponseSchema.safeParse(
-    await response.json().catch(() => null),
+    await response.json().catch((error: unknown) => {
+      if (isTimeout(error)) throw timeoutError();
+      return null;
+    }),
   );
   if (!parsed.success) throw toKakaoApiError(502);
   return parsed.data;
