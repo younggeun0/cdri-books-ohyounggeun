@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { createPersistentStore } from "@/lib/persistent-store";
 
 export const MAX_SEARCH_HISTORY = 8;
@@ -16,11 +17,13 @@ export function removeSearchHistory(list: string[], query: string): string[] {
   return list.filter((item) => item !== query);
 }
 
+const searchHistorySchema = z
+  .array(z.string())
+  .transform((list) => list.slice(0, MAX_SEARCH_HISTORY));
+
 export function parseSearchHistory(raw: unknown): string[] | null {
-  if (!Array.isArray(raw) || !raw.every((item) => typeof item === "string")) {
-    return null;
-  }
-  return raw.slice(0, MAX_SEARCH_HISTORY);
+  const parsed = searchHistorySchema.safeParse(raw);
+  return parsed.success ? parsed.data : null;
 }
 
 export const searchHistoryStore = createPersistentStore<string[]>(

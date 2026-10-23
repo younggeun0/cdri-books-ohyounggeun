@@ -40,7 +40,7 @@ describe("GET /api/books", () => {
     const body = await res.json();
     expect(body).toMatchObject({ totalCount: 1, isEnd: true, page: 2 });
     expect(body.books[0]).toMatchObject({
-      id: "9788937434488",
+      id: KAKAO_DOCUMENTS[0].url,
       title: "노르웨이의 숲",
       salePrice: 15300,
     });

@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import type { Book } from "@/entities/book";
+import { bookSchema, type Book } from "@/entities/book";
 import { createPersistentStore } from "@/lib/persistent-store";
 
 // 찜은 누른 시점의 책 스냅샷을 저장한다. API 결과가 나중에 바뀌어도 목록은 그대로 보여야 한다.
@@ -9,27 +9,22 @@ export function toggleWishlist(list: Book[], book: Book): Book[] {
     : [book, ...list];
 }
 
-const isStringArray = (value: unknown): value is string[] =>
-  Array.isArray(value) && value.every((item) => typeof item === "string");
+// id는 저장된 값을 믿지 않고 url에서 다시 만든다. 예전 ISBN 기반 id와 불필요한 필드는 읽는 순간 정리된다.
+const storedBookSchema = bookSchema
+  .omit({ id: true })
+  .transform((book): Book => ({ id: book.url, ...book }));
 
-// localStorage는 외부 입력이라, 렌더에서 바로 쓰는 필드까지 검증해 깨진 항목은 버린다.
-function isBook(value: unknown): value is Book {
-  if (typeof value !== "object" || value === null) return false;
-  const book = value as Record<string, unknown>;
-  return (
-    typeof book.id === "string" &&
-    typeof book.title === "string" &&
-    typeof book.url === "string" &&
-    typeof book.contents === "string" &&
-    typeof book.price === "number" &&
-    (book.salePrice === null || typeof book.salePrice === "number") &&
-    (book.thumbnail === null || typeof book.thumbnail === "string") &&
-    isStringArray(book.authors)
-  );
-}
-
+// localStorage는 외부 입력이라, 깨진 항목은 버리고 같은 책(id)은 처음 것만 남긴다.
 export function parseWishlist(raw: unknown): Book[] | null {
-  return Array.isArray(raw) ? raw.filter(isBook) : null;
+  if (!Array.isArray(raw)) return null;
+  const books = new Map<string, Book>();
+  for (const item of raw) {
+    const parsed = storedBookSchema.safeParse(item);
+    if (parsed.success && !books.has(parsed.data.id)) {
+      books.set(parsed.data.id, parsed.data);
+    }
+  }
+  return [...books.values()];
 }
 
 export const wishlistStore = createPersistentStore<Book[]>(

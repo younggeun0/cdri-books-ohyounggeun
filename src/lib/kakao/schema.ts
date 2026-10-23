@@ -6,16 +6,10 @@ const kakaoBookDocumentSchema = z.object({
   title: z.string(),
   contents: z.string(),
   url: z.string(),
-  // "ISBN10 ISBN13" 공백 구분. 한쪽만 있을 수 있다.
-  isbn: z.string(),
-  datetime: z.string(),
   authors: z.array(z.string()),
-  publisher: z.string(),
-  translators: z.array(z.string()),
   price: z.number(),
   sale_price: z.number(),
   thumbnail: z.string(),
-  status: z.string(),
 });
 
 export const kakaoBookResponseSchema = z.object({
