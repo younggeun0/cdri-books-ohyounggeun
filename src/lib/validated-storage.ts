@@ -16,19 +16,23 @@ export function validatedJSONStorage<T>(
   parse: (raw: unknown) => T | null,
   fallback: T,
 ): SyncStorage<T | undefined> {
-  const json = createJSONStorage<unknown>();
+  const jsonStorage = createJSONStorage<unknown>();
   return {
-    getItem: (key) => parse(json.getItem(key, null)) ?? fallback,
+    getItem: (key) => parse(jsonStorage.getItem(key, null)) ?? fallback,
     setItem: (key, value) => {
       try {
-        json.setItem(key, value);
+        jsonStorage.setItem(key, value);
       } catch {
         // 저장 공간이 없거나 막힌 환경에서도 현재 탭에서는 동작하도록 메모리 값은 유지한다.
       }
     },
-    removeItem: json.removeItem,
+    removeItem: jsonStorage.removeItem,
     // jotai의 JSON 저장소는 다른 탭의 변경을 getItem을 거치지 않고 바로 넘기므로, 여기서도 parse를 거친다.
     subscribe: (key, callback) =>
-      json.subscribe?.(key, (raw) => callback(parse(raw) ?? fallback), null),
+      jsonStorage.subscribe?.(
+        key,
+        (raw) => callback(parse(raw) ?? fallback),
+        null,
+      ),
   };
 }

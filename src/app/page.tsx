@@ -37,8 +37,10 @@ export default function Home({ searchParams }: PageProps<"/">) {
 async function PrefetchedResults({
   searchParams,
 }: Pick<PageProps<"/">, "searchParams">) {
-  const params = parseSearchParams(searchParamsGetter(await searchParams));
-  if (params.query === "") return <BookSearchResults />;
+  const bookSearchParams = parseSearchParams(
+    searchParamsGetter(await searchParams),
+  );
+  if (bookSearchParams.query === "") return <BookSearchResults />;
 
   // partialPrefetching이 켜져 있으면 Next가 요청마다 이 트리를 런타임 prefetch용으로 한 번 더 prerender한다.
   // 그 prerender에서는 카카오 fetch가 멈춰 있고, 조회가 먼저 실패하면 TanStack Query의 Date.now()가 prerender 에러를 낸다.
@@ -47,7 +49,7 @@ async function PrefetchedResults({
   const queryClient = new QueryClient();
   // infiniteQuery는 실패하면 reject하므로 오류를 삼켜 페이지 렌더를 막지 않는다. 실패한 쿼리는 dehydrate에 담기지 않아서 클라이언트가 직접 다시 조회한다.
   await queryClient
-    .infiniteQuery(serverBookSearchOptions(params))
+    .infiniteQuery(serverBookSearchOptions(bookSearchParams))
     .catch(() => undefined);
 
   return (

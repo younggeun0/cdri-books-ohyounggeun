@@ -26,58 +26,64 @@ interface SearchBoxProps {
 }
 
 export function SearchBox({ initialQuery, onSearch }: SearchBoxProps) {
-  const [stored, setHistory] = useAtom(searchHistoryAtom);
-  const history = stored ?? [];
-  const [value, setValue] = useState(initialQuery);
+  const [storedHistory, setHistory] = useAtom(searchHistoryAtom);
+  const history = storedHistory ?? [];
+  const [inputValue, setInputValue] = useState(initialQuery);
   // null이면 목록이 닫힌 상태, -1이면 열렸지만 강조된 기록이 없는 상태다.
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listboxId = useId();
-  const open = activeIndex !== null && history.length > 0;
+  const isHistoryOpen = activeIndex !== null && history.length > 0;
   // 강조된 기록을 지우면 목록이 줄어드니 남은 범위 안으로 당긴다.
-  const active = open ? Math.min(activeIndex, history.length - 1) : -1;
-  const dismiss = useDismiss<HTMLFormElement>(open, () => setActiveIndex(null));
+  const clampedActiveIndex = isHistoryOpen
+    ? Math.min(activeIndex, history.length - 1)
+    : -1;
+  const dismissProps = useDismiss<HTMLFormElement>(isHistoryOpen, () =>
+    setActiveIndex(null),
+  );
   const optionId = (index: number) => `${listboxId}-${index}`;
 
   function expand() {
     setActiveIndex((prev) => prev ?? -1);
   }
 
-  function search(raw: string) {
-    const query = raw.trim();
+  function search(rawQuery: string) {
+    const query = rawQuery.trim();
     if (query === "") return;
-    setValue(query);
+    setInputValue(query);
     setHistory((prev) => addSearchHistory(prev ?? [], query));
     onSearch(query);
     setActiveIndex(null);
     inputRef.current?.blur();
   }
 
-  function remove(item: string) {
-    setHistory((prev) => removeSearchHistory(prev ?? [], item));
+  function removeFromHistory(historyQuery: string) {
+    setHistory((prev) => removeSearchHistory(prev ?? [], historyQuery));
   }
 
   function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
-    search(value);
+    search(inputValue);
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     // 한글 조합을 확정하는 Enter가 강조된 기록 검색으로 이어지지 않게 한다.
     if (event.nativeEvent.isComposing) return;
-    const move = HISTORY_MOVES[event.key];
-    if (move) {
+    const direction = HISTORY_MOVES[event.key];
+    if (direction) {
       event.preventDefault();
-      setActiveIndex(moveIndex(active, history.length, move, true));
+      setActiveIndex(
+        moveIndex(clampedActiveIndex, history.length, direction, true),
+      );
       return;
     }
-    if (active === -1) return;
+    if (clampedActiveIndex === -1) return;
     if (event.key === "Enter") {
       event.preventDefault();
-      search(history[active]);
+      search(history[clampedActiveIndex]);
     } else if (event.key === "Delete") {
       event.preventDefault();
-      remove(history[active]);
+      removeFromHistory(history[clampedActiveIndex]);
     }
   }
 
@@ -85,12 +91,12 @@ export function SearchBox({ initialQuery, onSearch }: SearchBoxProps) {
     <form
       role="search"
       onSubmit={handleSubmit}
-      {...dismiss}
+      {...dismissProps}
       className="relative h-11 min-w-0 flex-1 md:h-[50px] md:w-[480px] md:flex-none"
     >
       <div
         className={`bg-light-gray absolute inset-x-0 top-0 z-20 overflow-hidden ${
-          open ? "rounded-3xl" : "rounded-full"
+          isHistoryOpen ? "rounded-3xl" : "rounded-full"
         }`}
       >
         <div className="flex h-11 items-center gap-3 px-3.5 md:h-[50px]">
@@ -100,14 +106,18 @@ export function SearchBox({ initialQuery, onSearch }: SearchBoxProps) {
             type="text"
             role="combobox"
             aria-label="도서 검색어"
-            aria-expanded={open}
+            aria-expanded={isHistoryOpen}
             aria-controls={listboxId}
             aria-autocomplete="none"
-            aria-activedescendant={active === -1 ? undefined : optionId(active)}
+            aria-activedescendant={
+              clampedActiveIndex === -1
+                ? undefined
+                : optionId(clampedActiveIndex)
+            }
             placeholder="검색어를 입력하세요"
-            value={value}
+            value={inputValue}
             onChange={(event) => {
-              setValue(event.target.value);
+              setInputValue(event.target.value);
               setActiveIndex(-1);
             }}
             onFocus={expand}
@@ -121,28 +131,28 @@ export function SearchBox({ initialQuery, onSearch }: SearchBoxProps) {
           id={listboxId}
           role="listbox"
           aria-label="검색 기록"
-          hidden={!open}
+          hidden={!isHistoryOpen}
           onMouseDown={(event) => event.preventDefault()}
           className="pb-3"
         >
-          {history.map((item, index) => (
+          {history.map((historyQuery, index) => (
             <li
-              key={item}
+              key={historyQuery}
               id={optionId(index)}
               role="option"
-              aria-selected={index === active}
-              onClick={() => search(item)}
+              aria-selected={index === clampedActiveIndex}
+              onClick={() => search(historyQuery)}
               className="aria-selected:bg-gray/50 flex h-10 cursor-pointer items-center pr-3.5 pl-[50px]"
             >
               <span className="text-body2 text-text-subtitle min-w-0 flex-1 truncate">
-                {item}
+                {historyQuery}
               </span>
               {/* option 안에는 tabIndex=-1 버튼도 둘 수 없어(nested-interactive) 마우스 전용 span으로 둔다. 키보드는 Delete 키로 지운다. */}
               <span
                 aria-hidden="true"
                 onClick={(event) => {
                   event.stopPropagation();
-                  remove(item);
+                  removeFromHistory(historyQuery);
                 }}
                 className="text-text-primary shrink-0 p-0.5"
               >

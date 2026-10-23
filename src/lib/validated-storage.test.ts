@@ -15,7 +15,7 @@ const numbersAtom = (key = "k") =>
   );
 
 // atomWithStorage는 구독(mount)될 때 저장소를 읽으므로, 화면에서 쓰는 것처럼 구독한 store를 돌려준다.
-function mounted(atom: ReturnType<typeof numbersAtom>) {
+function mountInNewStore(atom: ReturnType<typeof numbersAtom>) {
   const store = createStore();
   const listener = vi.fn();
   store.sub(atom, listener);
@@ -44,13 +44,13 @@ describe("validatedJSONStorage", () => {
     store.sub(atom, () => {});
     expect(store.get(atom)).toEqual([1]);
     const empty = numbersAtom("empty");
-    expect(mounted(empty).store.get(empty)).toEqual([]);
+    expect(mountInNewStore(empty).store.get(empty)).toEqual([]);
   });
 
   it("저장한 값을 새 store에서도 읽는다", () => {
     const atom = numbersAtom();
-    mounted(atom).store.set(atom, [1, 2]);
-    expect(mounted(atom).store.get(atom)).toEqual([1, 2]);
+    mountInNewStore(atom).store.set(atom, [1, 2]);
+    expect(mountInNewStore(atom).store.get(atom)).toEqual([1, 2]);
   });
 
   it("깨진 JSON이나 형식이 다른 값은 기본값으로 대체한다", () => {
@@ -58,13 +58,13 @@ describe("validatedJSONStorage", () => {
     localStorage.setItem("wrong", JSON.stringify({ a: 1 }));
     const broken = numbersAtom("broken");
     const wrong = numbersAtom("wrong");
-    expect(mounted(broken).store.get(broken)).toEqual([]);
-    expect(mounted(wrong).store.get(wrong)).toEqual([]);
+    expect(mountInNewStore(broken).store.get(broken)).toEqual([]);
+    expect(mountInNewStore(wrong).store.get(wrong)).toEqual([]);
   });
 
   it("다른 탭에서 같은 키를 바꾸면 검증한 값으로 갱신한다", () => {
     const atom = numbersAtom();
-    const { store, listener } = mounted(atom);
+    const { store, listener } = mountInNewStore(atom);
 
     otherTabWrites("k", JSON.stringify([9]));
     expect(store.get(atom)).toEqual([9]);
@@ -72,14 +72,14 @@ describe("validatedJSONStorage", () => {
     otherTabWrites("k", JSON.stringify(["x"]));
     expect(store.get(atom)).toEqual([]);
 
-    const calls = listener.mock.calls.length;
+    const callCountBefore = listener.mock.calls.length;
     otherTabWrites("other", JSON.stringify([1]));
-    expect(listener).toHaveBeenCalledTimes(calls);
+    expect(listener).toHaveBeenCalledTimes(callCountBefore);
   });
 
   it("저장에 실패해도 현재 값은 바뀐다", () => {
     const atom = numbersAtom();
-    const { store } = mounted(atom);
+    const { store } = mountInNewStore(atom);
     vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => {
       throw new DOMException("full", "QuotaExceededError");
     });

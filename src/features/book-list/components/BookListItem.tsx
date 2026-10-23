@@ -19,17 +19,17 @@ function Cover({
   onToggleWish,
   expanded,
 }: BookListItemProps & { expanded: boolean }) {
-  const size = expanded
+  const coverSizeClass = expanded
     ? "h-[200px] w-[140px] lg:h-[280px] lg:w-[210px]"
     : "h-[68px] w-12";
-  const heartSize = expanded ? "size-6" : "size-4";
-  const Heart = wished ? HeartFillIcon : HeartLineIcon;
+  const heartSizeClass = expanded ? "size-6" : "size-4";
+  const HeartIcon = wished ? HeartFillIcon : HeartLineIcon;
   // 찜 목록은 하이드레이션 뒤 마운트 effect에서 들어온다. 그 전에 그리면 찜한 책도 빈 하트로 보이므로,
   // 자리는 남긴 채 목록을 읽은 뒤에 보이게 한다.
-  const loaded = wished !== undefined;
+  const isWishlistLoaded = wished !== undefined;
 
   return (
-    <div className={`relative shrink-0 ${size}`}>
+    <div className={`relative shrink-0 ${coverSizeClass}`}>
       {book.thumbnail ? (
         // 카카오 썸네일은 작은 외부 이미지라 next/image의 도메인 등록과 변환 이득이 없어 일반 img를 쓴다.
         // eslint-disable-next-line @next/next/no-img-element
@@ -50,10 +50,10 @@ function Cover({
         aria-pressed={wished ?? false}
         aria-label={wished ? "찜 해제" : "찜하기"}
         onClick={() => onToggleWish(book)}
-        className={`absolute top-0 right-0 flex size-6 items-center justify-center ${loaded ? "" : "invisible"}`}
+        className={`absolute top-0 right-0 flex size-6 items-center justify-center ${isWishlistLoaded ? "" : "invisible"}`}
       >
-        <Heart
-          className={`${heartSize} ${wished ? "text-red" : "text-white drop-shadow-[0_0_1px_rgb(0_0_0/0.45)]"}`}
+        <HeartIcon
+          className={`${heartSizeClass} ${wished ? "text-red" : "text-white drop-shadow-[0_0_1px_rgb(0_0_0/0.45)]"}`}
         />
       </button>
     </div>
@@ -83,12 +83,12 @@ function BuyLink({
 
 function DetailToggle({
   expanded,
-  controls,
+  panelId,
   onClick,
   className,
 }: {
   expanded: boolean;
-  controls: string;
+  panelId: string;
   onClick: () => void;
   className: string;
 }) {
@@ -97,7 +97,7 @@ function DetailToggle({
       variant="secondary"
       size="responsive"
       aria-expanded={expanded}
-      aria-controls={controls}
+      aria-controls={panelId}
       onClick={onClick}
       className={className}
     >
@@ -111,12 +111,12 @@ function DetailToggle({
 export const BookListItem = memo(function BookListItem({
   expanded,
   onToggleExpanded,
-  ...props
+  ...coverProps
 }: BookListItemProps & {
   expanded: boolean;
   onToggleExpanded: (id: string) => void;
 }) {
-  const { book } = props;
+  const { book } = coverProps;
   const panelId = useId();
   const { listPrice, salePrice, displayPrice } = getDisplayPrice(book);
   const toggleExpanded = () => onToggleExpanded(book.id);
@@ -125,7 +125,7 @@ export const BookListItem = memo(function BookListItem({
     <div id={panelId}>
       {expanded ? (
         <div className="flex flex-col items-center gap-6 pt-6 pb-8 lg:flex-row lg:items-start lg:gap-8 lg:pt-6 lg:pr-4 lg:pb-10 lg:pl-[54px]">
-          <Cover {...props} expanded />
+          <Cover {...coverProps} expanded />
           <div className="w-full min-w-0 lg:max-w-[360px] lg:flex-1">
             <h2 className="text-title3 break-words">{book.title}</h2>
             <p className="text-body2 text-text-secondary mt-4">
@@ -143,7 +143,7 @@ export const BookListItem = memo(function BookListItem({
           <div className="flex w-full flex-col gap-6 self-stretch lg:w-60 lg:items-end lg:justify-between">
             <DetailToggle
               expanded
-              controls={panelId}
+              panelId={panelId}
               onClick={toggleExpanded}
               className="w-full max-lg:order-last lg:w-[115px]"
             />
@@ -170,7 +170,7 @@ export const BookListItem = memo(function BookListItem({
         </div>
       ) : (
         <div className="flex gap-4 py-4 lg:items-center lg:gap-12 lg:pr-4 lg:pl-12">
-          <Cover {...props} expanded={false} />
+          <Cover {...coverProps} expanded={false} />
           <div className="flex min-w-0 flex-1 flex-col gap-2 lg:flex-row lg:items-center lg:gap-14">
             <div className="min-w-0 lg:flex lg:flex-1 lg:items-baseline lg:gap-4">
               <h2 className="text-title3 line-clamp-2 break-words lg:truncate">
@@ -191,7 +191,7 @@ export const BookListItem = memo(function BookListItem({
               />
               <DetailToggle
                 expanded={false}
-                controls={panelId}
+                panelId={panelId}
                 onClick={toggleExpanded}
                 className="lg:w-[115px]"
               />

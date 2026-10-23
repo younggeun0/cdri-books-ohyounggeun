@@ -11,14 +11,14 @@ export function NavLink({
   href: string;
   children: ReactNode;
 }) {
-  const active = usePathname() === href;
+  const isCurrentPage = usePathname() === href;
 
   return (
     <Link
       href={href}
-      aria-current={active ? "page" : undefined}
+      aria-current={isCurrentPage ? "page" : undefined}
       className={
-        active
+        isCurrentPage
           ? "decoration-primary underline decoration-1 underline-offset-[6px]"
           : undefined
       }

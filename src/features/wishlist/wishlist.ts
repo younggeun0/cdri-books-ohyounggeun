@@ -15,10 +15,10 @@ import { validatedJSONStorage } from "@/lib/validated-storage";
  * 하트를 눌렀을 때 찜 목록에서 책을 넣거나 뺀다. 같은 id가 있으면 빼고, 없으면 맨 앞에 넣는다.
  * 넣을 때는 누른 시점의 Book을 통째로 저장한다. API 결과가 나중에 바뀌어도 찜 목록은 그대로 보여야 한다.
  */
-export function toggleWishlist(list: Book[], book: Book): Book[] {
-  return list.some((item) => item.id === book.id)
-    ? list.filter((item) => item.id !== book.id)
-    : [book, ...list];
+export function toggleWishlist(wishlist: Book[], book: Book): Book[] {
+  return wishlist.some((wishedBook) => wishedBook.id === book.id)
+    ? wishlist.filter((wishedBook) => wishedBook.id !== book.id)
+    : [book, ...wishlist];
 }
 
 /**
@@ -36,14 +36,14 @@ const storedBookSchema = z.pipe(
  */
 export function parseWishlist(raw: unknown): Book[] | null {
   if (!Array.isArray(raw)) return null;
-  const books = new Map<string, Book>();
-  for (const item of raw) {
-    const parsed = storedBookSchema.safeParse(item);
-    if (parsed.success && !books.has(parsed.data.id)) {
-      books.set(parsed.data.id, parsed.data);
+  const booksById = new Map<string, Book>();
+  for (const storedItem of raw) {
+    const parsed = storedBookSchema.safeParse(storedItem);
+    if (parsed.success && !booksById.has(parsed.data.id)) {
+      booksById.set(parsed.data.id, parsed.data);
     }
   }
-  return [...books.values()];
+  return [...booksById.values()];
 }
 
 /**
@@ -56,10 +56,10 @@ export function parseWishlist(raw: unknown): Book[] | null {
  */
 export function wishlistView(
   snapshot: Book[] | undefined,
-  stored: Book[] | undefined,
-): { rows: Book[]; count: number } | undefined {
-  if (!stored) return undefined;
-  return { rows: snapshot ?? stored, count: stored.length };
+  storedBooks: Book[] | undefined,
+): { rows: Book[]; wishedCount: number } | undefined {
+  if (!storedBooks) return undefined;
+  return { rows: snapshot ?? storedBooks, wishedCount: storedBooks.length };
 }
 
 /** 찜 목록이다. 저장소를 읽기 전(서버 렌더 포함)에는 undefined다. */
@@ -71,20 +71,21 @@ export const wishlistAtom = atomWithStorage<Book[] | undefined>(
 
 /**
  * 찜 목록과, 책 하나의 찜 여부 확인과 토글을 돌려준다.
- * books와 isWished(id)의 반환값은 atom의 마운트 effect가 저장소를 읽기 전까지(서버 렌더 포함) undefined다.
+ * wishedBooks와 isWished(id)의 반환값은 atom의 마운트 effect가 저장소를 읽기 전까지(서버 렌더 포함) undefined다.
  */
 export function useWishlist() {
-  const [books, setBooks] = useAtom(wishlistAtom);
+  const [wishedBooks, setWishedBooks] = useAtom(wishlistAtom);
   const wishedIds = useMemo(
-    () => books && new Set(books.map((book) => book.id)),
-    [books],
+    () => wishedBooks && new Set(wishedBooks.map((book) => book.id)),
+    [wishedBooks],
   );
   const isWished = useCallback((id: string) => wishedIds?.has(id), [wishedIds]);
-  const toggle = useCallback(
-    (book: Book) => setBooks((list) => toggleWishlist(list ?? [], book)),
-    [setBooks],
+  const toggleWish = useCallback(
+    (book: Book) =>
+      setWishedBooks((wishlist) => toggleWishlist(wishlist ?? [], book)),
+    [setWishedBooks],
   );
-  return { books, isWished, toggle };
+  return { wishedBooks, isWished, toggleWish };
 }
 
 /**
@@ -92,7 +93,7 @@ export function useWishlist() {
  * 숨겨질 때 구독이 해제되고 다시 보일 때 재구독하므로, subscribe 호출이 곧 "보임" 신호다.
  */
 function useShown() {
-  const [store] = useState(() => {
+  const [visibilityStore] = useState(() => {
     let shown = false;
     return {
       subscribe: (onChange: () => void) => {
@@ -103,10 +104,14 @@ function useShown() {
           onChange();
         };
       },
-      get: () => shown,
+      getSnapshot: () => shown,
     };
   });
-  return useSyncExternalStore(store.subscribe, store.get, () => false);
+  return useSyncExternalStore(
+    visibilityStore.subscribe,
+    visibilityStore.getSnapshot,
+    () => false,
+  );
 }
 
 /**
@@ -115,7 +120,7 @@ function useShown() {
  * @returns view는 라우트가 숨겨져 있거나 저장소를 읽기 전이면 undefined다. 행과 결과 수의 규칙은 {@link wishlistView}를 따른다.
  */
 export function useWishlistView() {
-  const { books, isWished, toggle } = useWishlist();
+  const { wishedBooks, isWished, toggleWish } = useWishlist();
   // 반드시 useWishlist 뒤에 선언한다. 훅의 effect는 선언 순서대로 실행되므로, 이렇게 두면 useWishlist가 저장소를 다시 읽은 다음에 shown이 true가 된다.
   // 순서가 바뀌면 shown이 먼저 true가 되어, 저장소를 다시 읽기 전의 값(이전 방문 때의 목록)이 snapshot으로 복사될 수 있다.
   const shown = useShown();
@@ -125,8 +130,8 @@ export function useWishlistView() {
   // 숨겨지는 순간에 바로 복사하면, 숨겨져 있는 동안 검색 화면에서 바꾼 찜이 다음 방문 때 반영되지 않는다.
   useEffect(() => () => setSnapshot(undefined), []);
 
-  const view = shown ? wishlistView(snapshot, books) : undefined;
+  const view = shown ? wishlistView(snapshot, wishedBooks) : undefined;
   if (view && !snapshot) setSnapshot(view.rows);
 
-  return { view, isWished, toggle };
+  return { view, isWished, toggleWish };
 }

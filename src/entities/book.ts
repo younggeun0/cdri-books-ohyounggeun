@@ -66,17 +66,17 @@ export interface BookSearchParams {
  * 카카오 문서 하나를 {@link Book}으로 바꾼다.
  * id는 카카오 url이다. 판매가가 0 이하이면 salePrice를, 썸네일이 빈 문자열이면 thumbnail을 null로 둔다.
  */
-export function toBook(doc: KakaoBookDocument): Book {
+export function toBook(kakaoDocument: KakaoBookDocument): Book {
   return {
-    id: doc.url,
-    title: doc.title,
-    authors: doc.authors,
-    contents: doc.contents,
-    url: doc.url,
-    price: doc.price,
+    id: kakaoDocument.url,
+    title: kakaoDocument.title,
+    authors: kakaoDocument.authors,
+    contents: kakaoDocument.contents,
+    url: kakaoDocument.url,
+    price: kakaoDocument.price,
     // 판매가가 없으면 카카오는 -1을 보낸다(문서에는 없고 실제 응답으로 확인). 0 이하를 모두 "없음"으로 본다.
-    salePrice: doc.sale_price > 0 ? doc.sale_price : null,
-    thumbnail: doc.thumbnail === "" ? null : doc.thumbnail,
+    salePrice: kakaoDocument.sale_price > 0 ? kakaoDocument.sale_price : null,
+    thumbnail: kakaoDocument.thumbnail === "" ? null : kakaoDocument.thumbnail,
   };
 }
 
@@ -86,11 +86,14 @@ export function toBook(doc: KakaoBookDocument): Book {
  *
  * @param page 요청한 페이지 번호다. 카카오 응답에는 페이지 번호가 없어서 호출부가 넘긴다.
  */
-export function toBookPage(res: KakaoBookResponse, page: number): BookPage {
+export function toBookPage(
+  kakaoResponse: KakaoBookResponse,
+  page: number,
+): BookPage {
   return {
-    books: res.documents.map(toBook),
-    totalCount: res.meta.total_count,
-    isEnd: res.meta.is_end || page >= KAKAO_MAX_PAGE,
+    books: kakaoResponse.documents.map(toBook),
+    totalCount: kakaoResponse.meta.total_count,
+    isEnd: kakaoResponse.meta.is_end || page >= KAKAO_MAX_PAGE,
     page,
   };
 }

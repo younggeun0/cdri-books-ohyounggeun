@@ -2,7 +2,7 @@ import type { ComponentPropsWithRef } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/cn";
 
-const variants = cva(
+const baseButtonVariants = cva(
   "inline-flex items-center justify-center gap-1 rounded-lg",
   {
     variants: {
@@ -30,8 +30,8 @@ const variants = cva(
 export function buttonVariants({
   className,
   ...props
-}: NonNullable<Parameters<typeof variants>[0]>) {
-  return cn(variants(props), className);
+}: NonNullable<Parameters<typeof baseButtonVariants>[0]>) {
+  return cn(baseButtonVariants(props), className);
 }
 
 type ButtonProps = ComponentPropsWithRef<"button"> &

@@ -8,7 +8,7 @@ const PAGE_SIZE = 10;
  * 카카오 요청 제한 시간(ms)이다.
  * 서버 렌더가 카카오 응답을 기다리므로, 카카오가 응답하지 않으면 화면이 스켈레톤에 멈춘다. 3초가 지나면 요청을 끊고 오류로 처리한다. 실측 응답은 수십 ms였다.
  */
-const TIMEOUT_MS = 3000;
+const KAKAO_REQUEST_TIMEOUT_MS = 3000;
 
 interface KakaoBookSearchRequest {
   query: string;
@@ -73,15 +73,15 @@ export async function searchBooks({
     throw new KakaoApiError("카카오 API 키가 설정되지 않았습니다.", 500);
   }
 
-  const url = new URL(KAKAO_BOOK_SEARCH_URL);
-  url.searchParams.set("query", query);
-  url.searchParams.set("page", String(page));
-  url.searchParams.set("size", String(PAGE_SIZE));
-  if (target) url.searchParams.set("target", target);
+  const requestUrl = new URL(KAKAO_BOOK_SEARCH_URL);
+  requestUrl.searchParams.set("query", query);
+  requestUrl.searchParams.set("page", String(page));
+  requestUrl.searchParams.set("size", String(PAGE_SIZE));
+  if (target) requestUrl.searchParams.set("target", target);
 
-  const res = await fetch(url, {
+  const response = await fetch(requestUrl, {
     headers: { Authorization: `KakaoAK ${apiKey}` },
-    signal: AbortSignal.timeout(TIMEOUT_MS),
+    signal: AbortSignal.timeout(KAKAO_REQUEST_TIMEOUT_MS),
   }).catch((error: unknown) => {
     // 타임아웃이 아닌 네트워크 오류는 503으로 넘긴다. 503은 401, 403, 429가 아니라서 502가 된다.
     throw error instanceof DOMException && error.name === "TimeoutError"
@@ -91,15 +91,15 @@ export async function searchBooks({
         )
       : toKakaoApiError(503);
   });
-  if (!res.ok) {
+  if (!response.ok) {
     throw toKakaoApiError(
-      res.status,
-      res.headers.get("Retry-After") ?? undefined,
+      response.status,
+      response.headers.get("Retry-After") ?? undefined,
     );
   }
   // 형태가 다른 응답(스키마 변경, 프록시가 준 HTML 등)이 변환 단계에서 터지지 않도록 여기서 막는다.
   const parsed = kakaoBookResponseSchema.safeParse(
-    await res.json().catch(() => null),
+    await response.json().catch(() => null),
   );
   if (!parsed.success) throw toKakaoApiError(502);
   return parsed.data;

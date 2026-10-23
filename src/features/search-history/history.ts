@@ -7,29 +7,35 @@ export const MAX_SEARCH_HISTORY = 8;
 
 /**
  * 검색어를 최근 검색 목록 맨 앞에 넣는다. 앞뒤 공백을 지운 값으로 저장하고, 같은 검색어가 있으면 앞으로 옮긴다.
- * max개를 넘으면 오래된 것부터 버린다. 공백뿐인 검색어는 무시하고 list를 그대로 돌려준다.
+ * maxCount개를 넘으면 오래된 것부터 버린다. 공백뿐인 검색어는 무시하고 history를 그대로 돌려준다.
  *
  * @example
  * addSearchHistory(["a", "b"], " b "); // ["b", "a"]
  */
 export function addSearchHistory(
-  list: string[],
+  history: string[],
   query: string,
-  max = MAX_SEARCH_HISTORY,
+  maxCount = MAX_SEARCH_HISTORY,
 ): string[] {
   const trimmed = query.trim();
-  if (trimmed === "") return list;
-  return [trimmed, ...list.filter((item) => item !== trimmed)].slice(0, max);
+  if (trimmed === "") return history;
+  return [
+    trimmed,
+    ...history.filter((savedQuery) => savedQuery !== trimmed),
+  ].slice(0, maxCount);
 }
 
 /** 목록에서 query와 정확히 같은 항목을 지운다. query의 공백은 정리하지 않는다. */
-export function removeSearchHistory(list: string[], query: string): string[] {
-  return list.filter((item) => item !== query);
+export function removeSearchHistory(
+  history: string[],
+  query: string,
+): string[] {
+  return history.filter((savedQuery) => savedQuery !== query);
 }
 
 const searchHistorySchema = z.pipe(
   z.array(z.string()),
-  z.transform((list) => list.slice(0, MAX_SEARCH_HISTORY)),
+  z.transform((history) => history.slice(0, MAX_SEARCH_HISTORY)),
 );
 
 /**

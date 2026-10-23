@@ -12,27 +12,27 @@ export const ARROW_MOVES = {
  * -1은 강조된 항목이 없는 상태다. 거기서 prev는 마지막 항목으로 간다.
  * 항목이 없으면 항상 -1이다.
  *
- * @param wrap true면 끝에서 next는 처음으로, 처음에서 prev는 끝으로 넘어간다. false면 끝에 머문다.
+ * @param shouldWrap true면 끝에서 next는 처음으로, 처음에서 prev는 끝으로 넘어간다. false면 끝에 머문다.
  */
 export function moveIndex(
-  current: number,
-  count: number,
-  move: ListMove,
-  wrap: boolean,
+  currentIndex: number,
+  itemCount: number,
+  direction: ListMove,
+  shouldWrap: boolean,
 ): number {
-  if (count === 0) return -1;
-  const last = count - 1;
-  switch (move) {
+  if (itemCount === 0) return -1;
+  const lastIndex = itemCount - 1;
+  switch (direction) {
     case "first":
       return 0;
     case "last":
-      return last;
+      return lastIndex;
     case "next":
-      if (current < last) return current + 1;
-      return wrap ? 0 : last;
+      if (currentIndex < lastIndex) return currentIndex + 1;
+      return shouldWrap ? 0 : lastIndex;
     case "prev":
-      if (current === -1) return last;
-      if (current > 0) return current - 1;
-      return wrap ? last : 0;
+      if (currentIndex === -1) return lastIndex;
+      if (currentIndex > 0) return currentIndex - 1;
+      return shouldWrap ? lastIndex : 0;
   }
 }
