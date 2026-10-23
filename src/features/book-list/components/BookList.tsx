@@ -116,7 +116,7 @@ export function BookListSkeleton() {
       {Array.from({ length: SKELETON_ROWS }, (_, index) => (
         <li
           key={index}
-          className="border-divider flex animate-pulse items-center gap-4 border-b py-4 lg:gap-12 lg:pr-4 lg:pl-12"
+          className="border-divider flex items-center gap-4 border-b py-4 motion-safe:animate-pulse lg:gap-12 lg:pr-4 lg:pl-12"
         >
           <div className="bg-light-gray h-[68px] w-12 shrink-0" />
           <div className="flex flex-1 flex-col gap-2">
