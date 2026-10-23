@@ -84,16 +84,16 @@ src/
 
 ### 주요 파일
 
-| 파일                                                    | 설명                                                                                                                                      |
-| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/api/books/route.ts`                                | `query`, `target`, `page`(1~50)를 검사해 잘못되면 400을 돌려주고, 맞으면 서버 변환을 거친 `BookPage`를 돌려준다                           |
-| `lib/kakao/search.ts`                                   | 카카오 호출. 3초 제한 시간, 응답 zod 검증, 실패를 상태 코드(키 문제 500, 요청 제한 429, 시간 초과 504, 나머지 502)와 한국어 문구로 바꾼다 |
-| `entities/book.ts`                                      | `Book` 타입과 변환. id는 카카오의 `url`이다(ISBN은 실측에서 겹쳤다). 50페이지부터는 `isEnd`를 true로 둔다                                 |
-| `features/book-search/queries.ts`                       | 재시도 정책. 429는 `Retry-After`가 8초 이하일 때 2번까지, 5xx와 네트워크 오류는 1번 재시도한다                                            |
-| `features/book-search/components/BookSearchResults.tsx` | 화면 상태를 판별 유니온(`idle`, `loading`, `error`, `empty`, `results`) 하나로 계산하고 `switch`로 그린다                                 |
-| `features/book-list/components/BookList.tsx`            | `useWindowVirtualizer`로 보이는 행만 그린다. 하이드레이션 전에는 서버 HTML과 같은 일반 흐름으로 그린다                                    |
-| `features/wishlist/wishlist.ts`                         | 찜 저장(jotai `atomWithStorage`)과 찜 화면의 snapshot 규칙                                                                                |
-| `lib/validated-storage.ts`                              | localStorage를 외부 입력으로 보고, 읽을 때와 다른 탭에서 바뀔 때 모두 zod로 검증한다                                                      |
+| 파일                                                    | 설명                                                                                                                                                       |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/api/books/route.ts`                                | `query`, `target`, `page`(1~50)를 검사해 잘못되면 400을 돌려주고, 맞으면 서버 변환을 거친 `BookPage`를 돌려준다                                            |
+| `lib/kakao/search.ts`                                   | 카카오 호출. 3초 제한 시간, 응답 zod 검증, 실패를 상태 코드(키 문제 500, 요청 제한 429, 검색어 문제 400, 시간 초과 504, 나머지 502)와 한국어 문구로 바꾼다 |
+| `entities/book.ts`                                      | `Book` 타입과 변환. id는 카카오의 `url`이다(ISBN은 실측에서 겹쳤다). 50페이지부터는 `isEnd`를 true로 둔다                                                  |
+| `features/book-search/queries.ts`                       | 재시도 정책. 429는 `Retry-After`가 8초 이하일 때 2번까지, 5xx와 네트워크 오류는 1번 재시도한다                                                             |
+| `features/book-search/components/BookSearchResults.tsx` | 화면 상태를 판별 유니온(`idle`, `loading`, `error`, `empty`, `results`) 하나로 계산하고 `switch`로 그린다                                                  |
+| `features/book-list/components/BookList.tsx`            | `useWindowVirtualizer`로 보이는 행만 그린다. 하이드레이션 전에는 서버 HTML과 같은 일반 흐름으로 그린다                                                     |
+| `features/wishlist/wishlist.ts`                         | 찜 저장(jotai `atomWithStorage`)과 찜 화면의 snapshot 규칙                                                                                                 |
+| `lib/validated-storage.ts`                              | localStorage를 외부 입력으로 보고, 읽을 때와 다른 탭에서 바뀔 때 모두 zod로 검증한다                                                                       |
 
 ## 라이브러리 선택 이유
 
@@ -191,3 +191,44 @@ localStorage 값도 외부 입력으로 보고 읽을 때 검증해서, 깨진 �
 구현을 마친 뒤 요청이 들어와 화면에 그려지기까지의 순서(API 경계, 도메인 변환, 서버 상태, URL 상태, 브라우저 저장, UI 컴포넌트, 화면 상태, 스타일과 성능)로 코드를 다시 리뷰하고, 그때 나온 개선을 같은 흐름의 PR로 반영했습니다. 측정이나 사례 조사로 결정한 것(실측 결과를 근거로 한 기각 포함)은 해당 이슈와 PR에 근거를 남겼습니다.
 
 테스트는 Vitest로 화면과 분리한 순수 로직을 검증합니다. 대상은 카카오 변환, 재시도 정책, URL 해석, 검색 기록과 찜 규칙, 가격 표시, 저장소 검증, Route Handler 입력 검사입니다.
+
+## AI 사용 기록
+
+Claude Code(Opus 5.5)로 작업했습니다. 구현, 측정, 비교 분석, 사례 조사는 서브에이전트(Opus, Sonnet)에 나눠 맡겼고, 각 결과는 머지 전에 diff와 실제 동작으로 다시 확인했습니다. 무엇을 채택하고 거절할지는 단계마다 제가 정했습니다.
+
+### 단계별 기록
+
+각 PR 코멘트에 그 구간에서 AI에 맡긴 일, 결정과 근거, 토큰 사용량을 남겼습니다. 구간은 앞 기록이 끝난 시점부터 이어 붙여서 빠지는 사용량이 없습니다.
+
+[#2](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/2#issuecomment-6310902373), [#4](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/4#issuecomment-6311060564), [#7](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/7#issuecomment-6311234200), [#9](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/9#issuecomment-6311292487), [#12](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/12#issuecomment-6311445354), [#13](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/13#issuecomment-6311505295), [#15](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/15#issuecomment-6311650622), [#17](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/17#issuecomment-6311727883), [#19](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/19#issuecomment-6311862928), [#25](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/25#issuecomment-6354630803), [#27](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/27#issuecomment-6354746304), [#28](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/28#issuecomment-6354824232), [#30](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/30#issuecomment-6354973305), [#31](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/31#issuecomment-6355151162), [#34](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/34#issuecomment-6355505456), [#36](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/36#issuecomment-6355563064), [#39](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/39#issuecomment-6355786290), [#40](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/40#issuecomment-6355927032), [#41](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/41#issuecomment-6355968041), [#46](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/46#issuecomment-6356035338), [#47](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/47#issuecomment-6356055001), [#48](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/48#issuecomment-6356086726), [#50](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/50#issuecomment-6357754886), [#56](https://github.com/younggeun0/cdri-books-ohyounggeun/pull/56#issuecomment-6357752730)
+
+### 마지막 구간 (PR #56 이후, 제출 전 점검)
+
+이 구간에 머지한 PR은 README(#58), JSDoc 재검증(#60), deprecated API 교체(#62), 변수명 개선(#64), 찜 화면 결과 수 aria-live(#66), 최종 코드 리뷰 반영(#68)입니다.
+
+| 결정                                                  | 이유                                                                                                 | 결과                                                                      |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| README를 리뷰 노트와 대조해 보완한 뒤 머지            | 제출물의 첫 문서라 검토를 받고 머지                                                                  | 1~8단계 리뷰의 한계와 협의 포인트 반영                                    |
+| deprecated API 3곳 교체                               | 설치된 타입 정의의 `@deprecated`와 TypeScript 진단으로 확인                                          | 스캔 5건 → 0건, 프로덕션 HTML과 하이드레이션 확인                         |
+| JSDoc을 목적과 계약 중심으로 다시 쓰기                | 기존 주석의 형식만 바꾼 블록이 있었음                                                                | 블록 81개 판정, 16개 재작성, 3개 인라인 이동, 코드와 어긋난 문장 4개 수정 |
+| 모호한 변수명 변경                                    | 모호한 것보다 길어도 구체적인 이름이 낫다                                                            | 31파일 이름만 변경, 주석의 옛 이름 0건 확인                               |
+| 찜 화면 결과 수를 로딩 중에도 같은 live 영역으로 유지 | 검색 화면(#46)과 같은 원리                                                                           | 세 상태에서 같은 요소, CLS 0                                              |
+| 최종 코드 리뷰 10건 중 7건 반영                       | 카카오 4xx 처리는 1,500자 검색어로 414를 실측해 확인                                                 | 테스트 94 → 100, 긴 검색어는 재시도 없이 바로 안내                        |
+| 리뷰 3건 미채택                                       | url 중복 0건(#23 실측), 목록 시작 위치 불변(8단계 프레임 기록), 설정 오류의 1회 재시도는 비용이 작음 | 이슈 #67에 근거 기록                                                      |
+
+토큰 사용량(2026-10-23 04:58 UTC부터 README 작성 전까지)
+
+| 주체                | 모델              | 호출 | 신규 처리(input + cache write + output) | cache read 포함 합계 |
+| ------------------- | ----------------- | ---: | --------------------------------------: | -------------------: |
+| 메인 세션           | claude-opus-5-5   |   97 |                                 240,173 |           28,178,272 |
+| 코드 리뷰           | claude-opus-5-5   |    6 |                                 103,746 |              381,244 |
+| 변수명 개선         | claude-opus-5-5   |   33 |                                 201,408 |            4,604,434 |
+| JSDoc 재검증        | claude-opus-5-5   |   40 |                                 187,549 |            4,759,276 |
+| deprecated API 점검 | claude-sonnet-5-5 |   25 |                                  92,886 |            1,707,936 |
+| **합계**            |                   |  201 |                             **825,762** |           39,631,162 |
+
+cache read는 이전 대화 맥락을 캐시에서 다시 읽은 양이라 비용이 낮습니다. 실제 작업량은 신규 처리 열에 가깝습니다.
+
+### 전체 합계
+
+과제 시작(2026-10-21 07:46 UTC)부터 README 작성 전까지 호출 1,792번, 신규 처리 8,102,966 토큰(cache read 포함 308,687,457 토큰)을 썼습니다.
