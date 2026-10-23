@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createStore } from "jotai/vanilla";
 import { toBook } from "@/entities/book";
 import { KAKAO_DOCUMENTS } from "@/test/kakao-documents";
-import { parseWishlist, toggleWishlist, wishlistAtom } from "./wishlist";
+import {
+  parseWishlist,
+  toggleWishlist,
+  wishlistAtom,
+  wishlistView,
+} from "./wishlist";
 
 const [a, b, c] = KAKAO_DOCUMENTS.map(toBook);
 
@@ -30,6 +35,55 @@ describe("toggleWishlist", () => {
     const snapshot = { ...a, price: 1000 };
     const [saved] = toggleWishlist([], snapshot);
     expect(saved.price).toBe(1000);
+  });
+});
+
+const ids = (books: { id: string }[]) => books.map((book) => book.id);
+
+describe("wishlistView", () => {
+  it("저장소를 읽기 전에는 보여 줄 것이 없다", () => {
+    expect(wishlistView(undefined, undefined)).toBeUndefined();
+    expect(wishlistView([a], undefined)).toBeUndefined();
+  });
+
+  it("snapshot이 없으면 저장된 목록을 그대로 보여 주고 결과 수도 같다", () => {
+    const view = wishlistView(undefined, [a, b, c])!;
+    expect(ids(view.rows)).toEqual(ids([a, b, c]));
+    expect(view.count).toBe(3);
+  });
+
+  it("찜을 해제해도 행은 남고 결과 수만 줄어든다", () => {
+    const snapshot = [a, b, c];
+    const stored = toggleWishlist(snapshot, b);
+    const view = wishlistView(snapshot, stored)!;
+    expect(ids(view.rows)).toEqual(ids([a, b, c]));
+    expect(view.count).toBe(2);
+  });
+
+  it("해제한 행을 다시 찜하면 결과 수가 돌아오고 행은 그대로다", () => {
+    const snapshot = [a, b, c];
+    const unwished = toggleWishlist(snapshot, b);
+    const rewished = toggleWishlist(unwished, snapshot[1]);
+    const view = wishlistView(snapshot, rewished)!;
+    expect(ids(view.rows)).toEqual(ids(snapshot));
+    expect(view.count).toBe(3);
+    expect(ids(rewished)).toEqual([b.id, a.id, c.id]);
+  });
+
+  it("전부 해제해도 행은 남고 결과 수는 0이다", () => {
+    const view = wishlistView([a, b], [])!;
+    expect(view.rows).toHaveLength(2);
+    expect(view.count).toBe(0);
+  });
+
+  it("처음부터 비어 있으면 행이 없다", () => {
+    expect(wishlistView([], [])).toEqual({ rows: [], count: 0 });
+  });
+
+  it("다른 탭에서 찜이 바뀌면 결과 수만 따라가고 행은 그대로다", () => {
+    const view = wishlistView([a, b], [c, a, b])!;
+    expect(ids(view.rows)).toEqual(ids([a, b]));
+    expect(view.count).toBe(3);
   });
 });
 
