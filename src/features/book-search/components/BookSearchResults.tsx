@@ -15,16 +15,23 @@ import { useBookSearchParams } from "../useBookSearchParams";
 
 const LABEL = "도서 검색 결과";
 
+/** 검색 결과 영역이 보여 줄 화면이다. 한 번에 하나만 보인다. */
 type SearchScreen =
   | { kind: "idle" | "loading" | "empty" }
   | { kind: "error"; message: string }
   | { kind: "results"; totalCount: number; books: Book[] };
 
+/**
+ * 검색 조건과 조회 상태로 지금 보여 줄 화면을 정한다.
+ * 검색어가 비면 idle, 받은 데이터 없이 실패하면 error, 아직 받는 중이면 loading, 전체 결과가 0건이면 empty다.
+ * 다음 페이지만 실패했다면 이미 받은 목록은 남겨 둔다. 화면 전체를 에러로 바꾸지 않는다.
+ *
+ * @returns screen과, 재시도와 다음 페이지 조회에 쓰는 조회 결과(search)
+ */
 function useSearchScreen(params: BookSearchParams) {
   const search = useBookSearch(params);
   const { data, error } = search;
 
-  // 다음 페이지만 실패했다면 이미 받은 목록은 남겨 둔다. 화면 전체를 에러로 바꾸지 않는다.
   let screen: SearchScreen;
   if (params.query.trim() === "") screen = { kind: "idle" };
   else if (!data && error) screen = { kind: "error", message: error.message };
@@ -40,7 +47,7 @@ function useSearchScreen(params: BookSearchParams) {
   return { screen, search };
 }
 
-// 첫 진입 뒤의 검색은 서버를 거치지 않고 URL만 바뀌므로, 검색 조건은 props가 아니라 URL에서 직접 읽는다.
+/** 첫 진입 뒤의 검색은 서버를 거치지 않고 URL만 바뀌므로, 검색 조건은 props가 아니라 URL에서 직접 읽는다. */
 export function BookSearchResults() {
   const [params] = useBookSearchParams();
   const { screen, search } = useSearchScreen(params);
@@ -121,6 +128,7 @@ export function BookSearchResults() {
   }
 }
 
+/** 결과 수 줄에 보여 줄 값이다. 결과가 없거나 검색 전이면 0, 로딩과 오류처럼 아직 모르면 null이다. */
 function resultCount(screen: SearchScreen) {
   if (screen.kind === "results") return screen.totalCount;
   if (screen.kind === "idle" || screen.kind === "empty") return 0;

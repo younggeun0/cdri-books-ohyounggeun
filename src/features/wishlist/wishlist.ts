@@ -11,20 +11,26 @@ import * as z from "zod/mini";
 import { bookSchema, type Book } from "@/entities/book";
 import { validatedJSONStorage } from "@/lib/validated-storage";
 
-// 찜은 누른 시점의 책 스냅샷을 저장한다. API 결과가 나중에 바뀌어도 목록은 그대로 보여야 한다.
+/**
+ * 찜은 누른 시점의 책 스냅샷을 저장한다. API 결과가 나중에 바뀌어도 목록은 그대로 보여야 한다.
+ * 같은 id가 있으면 빼고, 없으면 맨 앞에 넣는다.
+ */
 export function toggleWishlist(list: Book[], book: Book): Book[] {
   return list.some((item) => item.id === book.id)
     ? list.filter((item) => item.id !== book.id)
     : [book, ...list];
 }
 
-// id는 저장된 값을 믿지 않고 url에서 다시 만든다. 예전 ISBN 기반 id와 불필요한 필드는 읽는 순간 정리된다.
+/** id는 저장된 값을 믿지 않고 url에서 다시 만든다. 예전 ISBN 기반 id와 불필요한 필드는 읽는 순간 정리된다. */
 const storedBookSchema = z.pipe(
   z.omit(bookSchema, { id: true }),
   z.transform((book): Book => ({ id: book.url, ...book })),
 );
 
-// localStorage는 외부 입력이라, 깨진 항목은 버리고 같은 책(id)은 처음 것만 남긴다.
+/**
+ * localStorage는 외부 입력이라, 깨진 항목은 버리고 같은 책(id)은 처음 것만 남긴다.
+ * 배열이 아니면 null을 돌려준다.
+ */
 export function parseWishlist(raw: unknown): Book[] | null {
   if (!Array.isArray(raw)) return null;
   const books = new Map<string, Book>();
@@ -37,9 +43,13 @@ export function parseWishlist(raw: unknown): Book[] | null {
   return [...books.values()];
 }
 
-// snapshot은 찜 화면에 들어온 순간의 찜 목록을 복사해 둔 배열이다.
-// 화면의 행은 이 복사본을 그대로 보여 주고, 결과 수만 저장소의 현재 찜 목록 길이를 따른다.
-// 그래서 하트를 눌러 찜을 해제해도 저장소에서만 빠지고 행은 남는다. 다시 누르면 같은 행의 하트가 채워진다.
+/**
+ * snapshot은 찜 화면에 들어온 순간의 찜 목록을 복사해 둔 배열이다.
+ * 화면의 행은 이 복사본을 그대로 보여 주고, 결과 수만 저장소의 현재 찜 목록 길이를 따른다.
+ * 그래서 하트를 눌러 찜을 해제해도 저장소에서만 빠지고 행은 남는다. 다시 누르면 같은 행의 하트가 채워진다.
+ *
+ * @returns 저장소를 아직 읽지 않았으면 undefined다. snapshot이 없으면 저장소 목록을 행으로 쓴다.
+ */
 export function wishlistView(
   snapshot: Book[] | undefined,
   stored: Book[] | undefined,
@@ -48,13 +58,17 @@ export function wishlistView(
   return { rows: snapshot ?? stored, count: stored.length };
 }
 
+/** 찜 목록이다. 저장소를 읽기 전(서버 렌더 포함)에는 undefined다. */
 export const wishlistAtom = atomWithStorage<Book[] | undefined>(
   "cdri-books:wishlist",
   undefined,
   validatedJSONStorage(parseWishlist, []),
 );
 
-// books와 isWished는 atom의 마운트 effect가 저장소를 읽기 전까지(서버 렌더 포함) undefined다.
+/**
+ * 찜 목록과, 책 하나의 찜 여부 확인과 토글을 돌려준다.
+ * books와 isWished(id)의 반환값은 atom의 마운트 effect가 저장소를 읽기 전까지(서버 렌더 포함) undefined다.
+ */
 export function useWishlist() {
   const [books, setBooks] = useAtom(wishlistAtom);
   const wishedIds = useMemo(
@@ -69,8 +83,10 @@ export function useWishlist() {
   return { books, isWished, toggle };
 }
 
-// 라우트가 보이는 동안만 true다. cacheComponents에서는 다른 페이지로 이동해도 이 라우트가 언마운트되지 않고 Activity로 숨겨진다.
-// 숨겨질 때 구독이 해제되고 다시 보일 때 재구독하므로, subscribe 호출이 곧 "보임" 신호다.
+/**
+ * 라우트가 보이는 동안만 true다. cacheComponents에서는 다른 페이지로 이동해도 이 라우트가 언마운트되지 않고 Activity로 숨겨진다.
+ * 숨겨질 때 구독이 해제되고 다시 보일 때 재구독하므로, subscribe 호출이 곧 "보임" 신호다.
+ */
 function useShown() {
   const [store] = useState(() => {
     let shown = false;
@@ -89,7 +105,11 @@ function useShown() {
   return useSyncExternalStore(store.subscribe, store.get, () => false);
 }
 
-// 찜 화면 전용이다. 사용자가 찜 화면에 들어올 때마다(라우트가 다시 보일 때마다) 그 시점의 찜 목록을 snapshot으로 새로 복사한다.
+/**
+ * 찜 화면 전용이다. 사용자가 찜 화면에 들어올 때마다(라우트가 다시 보일 때마다) 그 시점의 찜 목록을 snapshot으로 새로 복사한다.
+ *
+ * @returns view는 라우트가 숨겨져 있거나 저장소를 읽기 전이면 undefined다. 행과 결과 수의 규칙은 {@link wishlistView}를 따른다.
+ */
 export function useWishlistView() {
   const { books, isWished, toggle } = useWishlist();
   // 반드시 useWishlist 뒤에 선언한다. 훅의 effect는 선언 순서대로 실행되므로, 이렇게 두면 useWishlist가 저장소를 다시 읽은 다음에 shown이 true가 된다.

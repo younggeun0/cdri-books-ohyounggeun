@@ -7,6 +7,14 @@ import type { BookSearchParams } from "@/entities/book";
 import { bookSearchOptions } from "./queries";
 import { parseSearchParams, toSearchQueryString } from "./search-params";
 
+/**
+ * URL의 검색 조건과, 그 조건으로 검색을 실행하는 함수를 함께 돌려준다.
+ *
+ * search는 조건이 바뀌면 서버 렌더 없이 history에 URL을 쌓는다. 조건이 같으면 URL은 두고 결과를 1페이지부터 다시 받는다.
+ * 어느 쪽이든 검색 횟수를 1 늘리고 창을 맨 위로 스크롤한다.
+ *
+ * @returns [현재 검색 조건, search, 검색 횟수]. 검색 횟수는 입력창의 key로 써서 검색할 때마다 입력창을 다시 만든다.
+ */
 export function useBookSearchParams() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();

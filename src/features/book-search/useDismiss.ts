@@ -6,8 +6,14 @@ import {
   type KeyboardEvent,
 } from "react";
 
+/** escape는 Esc 키, outside는 루트 밖을 누르거나 포커스가 루트 밖으로 나간 경우다. */
 export type DismissReason = "escape" | "outside";
 
+/**
+ * 열린 팝업을 Esc, 바깥 클릭, 바깥으로의 포커스 이동으로 닫는다.
+ * 돌려준 ref와 핸들러(onPointerDown, onKeyDown, onBlur)를 모두 팝업의 루트 요소에 연결해야 한다.
+ * open이 false면 아무것도 하지 않는다.
+ */
 export function useDismiss<T extends HTMLElement>(
   open: boolean,
   onDismiss: (reason: DismissReason) => void,
