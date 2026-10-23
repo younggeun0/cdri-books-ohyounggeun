@@ -1,22 +1,21 @@
+import { z } from "zod";
 import type { KakaoBookDocument, KakaoBookResponse } from "@/lib/kakao/schema";
 import { KAKAO_MAX_PAGE } from "@/lib/kakao/types";
 
-export interface Book {
-  id: string;
-  title: string;
-  contents: string;
-  url: string;
-  isbn13: string | null;
-  isbn10: string | null;
-  publishedAt: string;
-  authors: string[];
-  publisher: string;
-  translators: string[];
-  price: number;
-  salePrice: number | null;
-  thumbnail: string | null;
-  status: string;
-}
+// 찜 목록이 localStorage에 저장하고 다시 읽는 모양이기도 하다. UI가 쓰는 필드만 둔다.
+export const bookSchema = z.object({
+  // 카카오 url. ISBN은 같은 검색 결과 안에서도 겹치는 경우가 있어(같은 책 반복, 같은 ISSN의 다른 호) id로 쓰지 않는다.
+  id: z.string(),
+  title: z.string(),
+  authors: z.array(z.string()),
+  contents: z.string(),
+  url: z.string(),
+  price: z.number(),
+  salePrice: z.number().nullable(),
+  thumbnail: z.string().nullable(),
+});
+
+export type Book = z.infer<typeof bookSchema>;
 
 export interface BookPage {
   books: Book[];
@@ -45,33 +44,17 @@ export interface BookSearchParams {
   target: SearchTarget;
 }
 
-// ISBN 형식이 아닌 토큰이 섞여도 isbn10으로 오인하지 않도록 길이가 아닌 형식으로 판별한다.
-function splitIsbn(raw: string) {
-  const tokens = raw.split(/\s+/).filter(Boolean);
-  return {
-    isbn10: tokens.find((token) => /^\d{9}[\dX]$/.test(token)) ?? null,
-    isbn13: tokens.find((token) => /^\d{13}$/.test(token)) ?? null,
-  };
-}
-
 export function toBook(doc: KakaoBookDocument): Book {
-  const { isbn10, isbn13 } = splitIsbn(doc.isbn);
   return {
-    id: isbn13 ?? isbn10 ?? doc.url,
+    id: doc.url,
     title: doc.title,
+    authors: doc.authors,
     contents: doc.contents,
     url: doc.url,
-    isbn13,
-    isbn10,
-    publishedAt: doc.datetime,
-    authors: doc.authors,
-    publisher: doc.publisher,
-    translators: doc.translators,
     price: doc.price,
     // 판매가가 없으면 카카오는 -1을 보낸다(문서에는 없고 실제 응답으로 확인). 0 이하를 모두 "없음"으로 본다.
     salePrice: doc.sale_price > 0 ? doc.sale_price : null,
     thumbnail: doc.thumbnail === "" ? null : doc.thumbnail,
-    status: doc.status,
   };
 }
 

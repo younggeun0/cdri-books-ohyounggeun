@@ -32,6 +32,17 @@ describe("toggleWishlist", () => {
   });
 });
 
+const BOOK_KEYS = [
+  "authors",
+  "contents",
+  "id",
+  "price",
+  "salePrice",
+  "thumbnail",
+  "title",
+  "url",
+];
+
 describe("parseWishlist", () => {
   it("배열이 아니면 null이다", () => {
     expect(parseWishlist({ id: "x" })).toBeNull();
@@ -39,8 +50,45 @@ describe("parseWishlist", () => {
   });
 
   it("형식이 깨진 항목만 버리고 나머지는 남긴다", () => {
-    const parsed = parseWishlist([a, { id: "x" }, null, { ...b, price: "1" }]);
+    const parsed = parseWishlist([
+      a,
+      { id: "x" },
+      null,
+      { ...b, price: "1" },
+      { ...c, url: undefined },
+    ]);
     expect(parsed).toEqual([a]);
+  });
+
+  it("예전 형식(ISBN id, 추가 필드)은 url id로 바꾸고 추가 필드는 버린다", () => {
+    const legacy = {
+      ...a,
+      id: "9788937434488",
+      isbn13: "9788937434488",
+      isbn10: "8937434482",
+      publisher: "민음사",
+      translators: ["양억관"],
+      publishedAt: "2017-08-07T00:00:00.000+09:00",
+      status: "정상판매",
+    };
+    const [parsed] = parseWishlist([legacy])!;
+    expect(parsed).toEqual(a);
+    expect(Object.keys(parsed).sort()).toEqual(BOOK_KEYS);
+  });
+
+  it("id가 없는 항목도 url로 id를 만들어 읽는다", () => {
+    const withoutId: Partial<typeof a> = { ...a };
+    delete withoutId.id;
+    expect(parseWishlist([withoutId])).toEqual([a]);
+  });
+
+  it("같은 url이 여럿이면 처음 항목만 남긴다", () => {
+    const first = { ...a, id: "old-1", price: 1 };
+    const second = { ...a, id: "old-2", price: 2 };
+    expect(parseWishlist([first, b, second])).toEqual([
+      { ...first, id: a.url },
+      b,
+    ]);
   });
 });
 
@@ -56,5 +104,14 @@ describe("wishlistStore", () => {
       localStorage.getItem("cdri-books:wishlist")!,
     );
     expect(parseWishlist(raw)).toEqual([a]);
+  });
+
+  it("저장되는 항목은 Book 필드만 가진다", () => {
+    wishlistStore.update((list) => toggleWishlist(list, a));
+    const raw = JSON.parse(localStorage.getItem("cdri-books:wishlist")!) as {
+      id: string;
+    }[];
+    expect(raw).toHaveLength(1);
+    expect(Object.keys(raw[0]).sort()).toEqual(BOOK_KEYS);
   });
 });
