@@ -1,5 +1,5 @@
 import { atomWithStorage } from "jotai/utils";
-import { z } from "zod";
+import * as z from "zod/mini";
 import { validatedJSONStorage } from "@/lib/validated-storage";
 
 export const MAX_SEARCH_HISTORY = 8;
@@ -18,9 +18,10 @@ export function removeSearchHistory(list: string[], query: string): string[] {
   return list.filter((item) => item !== query);
 }
 
-const searchHistorySchema = z
-  .array(z.string())
-  .transform((list) => list.slice(0, MAX_SEARCH_HISTORY));
+const searchHistorySchema = z.pipe(
+  z.array(z.string()),
+  z.transform((list) => list.slice(0, MAX_SEARCH_HISTORY)),
+);
 
 export function parseSearchHistory(raw: unknown): string[] | null {
   const parsed = searchHistorySchema.safeParse(raw);
