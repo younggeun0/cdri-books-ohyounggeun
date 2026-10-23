@@ -12,8 +12,8 @@ function stubKakao(response: Response) {
   return fetchMock;
 }
 
-function request(search: string) {
-  return new NextRequest(`http://localhost/api/books?${search}`);
+function booksRequest(queryString: string) {
+  return new NextRequest(`http://localhost/api/books?${queryString}`);
 }
 
 beforeEach(() => vi.stubEnv("KAKAO_REST_API_KEY", "test-key"));
@@ -32,12 +32,12 @@ describe("GET /api/books", () => {
       }),
     );
 
-    const res = await GET(
-      request(`query=${encodeURIComponent("노르웨이")}&page=2`),
+    const response = await GET(
+      booksRequest(`query=${encodeURIComponent("노르웨이")}&page=2`),
     );
 
-    expect(res.status).toBe(200);
-    const body = await res.json();
+    expect(response.status).toBe(200);
+    const body = await response.json();
     expect(body).toMatchObject({ totalCount: 1, isEnd: true, page: 2 });
     expect(body.books[0]).toMatchObject({
       id: KAKAO_DOCUMENTS[0].url,
@@ -55,10 +55,10 @@ describe("GET /api/books", () => {
       }),
     );
 
-    const res = await GET(request("query=a"));
+    const response = await GET(booksRequest("query=a"));
 
-    expect(res.status).toBe(502);
-    await expect(res.json()).resolves.toEqual({
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toEqual({
       message:
         "도서 검색 서비스에 일시적인 문제가 있습니다. 잠시 후 다시 시도해 주세요.",
     });
@@ -69,27 +69,27 @@ describe("GET /api/books", () => {
       new Response(null, { status: 429, headers: { "Retry-After": "5" } }),
     );
 
-    const res = await GET(request("query=a"));
+    const response = await GET(booksRequest("query=a"));
 
-    expect(res.status).toBe(429);
-    expect(res.headers.get("Retry-After")).toBe("5");
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("5");
   });
 
   it("Retry-After가 없으면 429 응답에도 싣지 않는다", async () => {
     stubKakao(new Response(null, { status: 429 }));
 
-    const res = await GET(request("query=a"));
+    const response = await GET(booksRequest("query=a"));
 
-    expect(res.status).toBe(429);
-    expect(res.headers.has("Retry-After")).toBe(false);
+    expect(response.status).toBe(429);
+    expect(response.headers.has("Retry-After")).toBe(false);
   });
 
   it("query가 없으면 카카오를 부르지 않고 400을 돌려준다", async () => {
     const fetchMock = stubKakao(Response.json({}));
 
-    const res = await GET(request("page=1"));
+    const response = await GET(booksRequest("page=1"));
 
-    expect(res.status).toBe(400);
+    expect(response.status).toBe(400);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

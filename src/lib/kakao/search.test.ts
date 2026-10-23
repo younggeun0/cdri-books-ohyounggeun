@@ -30,18 +30,18 @@ describe("searchBooks", () => {
       searchBooks({ query: "한강", target: "person", page: 2 }),
     ).resolves.toEqual(okResponse);
 
-    const [url, init] = fetchMock.mock.calls[0] as unknown as [
+    const [requestUrl, requestInit] = fetchMock.mock.calls[0] as unknown as [
       URL,
       RequestInit,
     ];
-    expect(Object.fromEntries(url.searchParams)).toEqual({
+    expect(Object.fromEntries(requestUrl.searchParams)).toEqual({
       query: "한강",
       page: "2",
       size: "10",
       target: "person",
     });
-    expect(init.headers).toEqual({ Authorization: "KakaoAK test-key" });
-    expect(init.signal).toBeInstanceOf(AbortSignal);
+    expect(requestInit.headers).toEqual({ Authorization: "KakaoAK test-key" });
+    expect(requestInit.signal).toBeInstanceOf(AbortSignal);
   });
 
   it("API 키가 없으면 카카오를 호출하지 않고 500 에러를 던진다", async () => {
@@ -65,9 +65,9 @@ describe("searchBooks", () => {
     ],
   ])(
     "카카오가 %i를 돌려주면 %i 상태와 사용자 문구로 바꾼다",
-    async (upstream, status, message) => {
+    async (kakaoStatus, status, message) => {
       vi.stubEnv("KAKAO_REST_API_KEY", "test-key");
-      stubFetch(new Response(null, { status: upstream }));
+      stubFetch(new Response(null, { status: kakaoStatus }));
 
       const error = await searchBooks({ query: "a", page: 1 }).catch(
         (e: unknown) => e,

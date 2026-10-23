@@ -18,19 +18,19 @@ function badRequest(message: string) {
  */
 export async function GET(request: NextRequest) {
   // searchParams를 읽는 GET은 Cache Components에서 prerender되지 않고 요청 시점에 실행된다.
-  const params = request.nextUrl.searchParams;
+  const searchParams = request.nextUrl.searchParams;
 
-  const query = params.get("query")?.trim();
+  const query = searchParams.get("query")?.trim();
   if (!query) return badRequest("query는 필수입니다.");
 
-  const target = params.get("target");
+  const target = searchParams.get("target");
   if (target !== null && !isBookTarget(target)) {
     return badRequest(
       `target은 ${BOOK_TARGETS.join(", ")} 중 하나여야 합니다.`,
     );
   }
 
-  const page = Number(params.get("page") ?? "1");
+  const page = Number(searchParams.get("page") ?? "1");
   if (!Number.isInteger(page) || page < 1 || page > KAKAO_MAX_PAGE) {
     return badRequest(`page는 1부터 ${KAKAO_MAX_PAGE} 사이의 정수여야 합니다.`);
   }

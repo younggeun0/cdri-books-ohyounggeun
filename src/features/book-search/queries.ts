@@ -8,8 +8,8 @@ import type { BookPage, BookSearchParams } from "@/entities/book";
  */
 export const bookKeys = {
   all: ["books"] as const,
-  search: (params: BookSearchParams) =>
-    [...bookKeys.all, "search", params] as const,
+  search: (bookSearchParams: BookSearchParams) =>
+    [...bookKeys.all, "search", bookSearchParams] as const,
 };
 
 /** 브라우저에서 /api/books 조회가 실패했을 때 던지는 오류다. message는 화면에 그대로 보여 준다. */
@@ -87,34 +87,36 @@ export async function fetchBookPage(
   page: number,
   signal?: AbortSignal,
 ): Promise<BookPage> {
-  const search = new URLSearchParams({
+  const apiSearchParams = new URLSearchParams({
     query: query.trim(),
     page: String(page),
   });
-  if (target !== "all") search.set("target", target);
+  if (target !== "all") apiSearchParams.set("target", target);
 
-  const res = await fetch(`/api/books?${search}`, { signal }).catch(
-    (error: unknown) => {
-      // 취소는 TanStack Query가 처리하도록 그대로 던지고, 네트워크 실패만 사용자 문구로 바꾼다.
-      if (signal?.aborted) throw error;
-      throw new BookSearchError(
-        "네트워크 연결을 확인한 뒤 다시 시도해 주세요.",
-        0,
-      );
-    },
-  );
-  if (!res.ok) {
-    const body = errorBodySchema.safeParse(await res.json().catch(() => null));
+  const response = await fetch(`/api/books?${apiSearchParams}`, {
+    signal,
+  }).catch((error: unknown) => {
+    // 취소는 TanStack Query가 처리하도록 그대로 던지고, 네트워크 실패만 사용자 문구로 바꾼다.
+    if (signal?.aborted) throw error;
     throw new BookSearchError(
-      body.success
-        ? body.data.message
-        : `도서 검색에 실패했습니다. (${res.status})`,
-      res.status,
-      parseRetryAfterMs(res.headers.get("Retry-After")),
+      "네트워크 연결을 확인한 뒤 다시 시도해 주세요.",
+      0,
+    );
+  });
+  if (!response.ok) {
+    const errorBody = errorBodySchema.safeParse(
+      await response.json().catch(() => null),
+    );
+    throw new BookSearchError(
+      errorBody.success
+        ? errorBody.data.message
+        : `도서 검색에 실패했습니다. (${response.status})`,
+      response.status,
+      parseRetryAfterMs(response.headers.get("Retry-After")),
     );
   }
   // 같은 배포의 우리 서버가 BookPage 모양을 보장하므로 성공 응답은 검증하지 않는다.
-  return res.json();
+  return response.json();
 }
 
 /**
@@ -124,17 +126,21 @@ export async function fetchBookPage(
  * @param fetchPage 페이지 조회 함수다. 서버 prefetch는 카카오를 직접 부르는 함수로 바꿔 넣는다.
  */
 export const bookSearchOptions = (
-  params: BookSearchParams,
+  bookSearchParams: BookSearchParams,
   fetchPage: typeof fetchBookPage = fetchBookPage,
 ) => {
   // 앞뒤 공백만 다른 입력이 서로 다른 캐시 항목이 되지 않도록 키를 만들기 전에 한 번만 정리한다.
-  const normalized = { ...params, query: params.query.trim() };
+  const normalized = {
+    ...bookSearchParams,
+    query: bookSearchParams.query.trim(),
+  };
   return infiniteQueryOptions({
     queryKey: bookKeys.search(normalized),
     queryFn: ({ pageParam, signal }) =>
       fetchPage(normalized, pageParam, signal),
     initialPageParam: 1,
-    getNextPageParam: (last) => (last.isEnd ? undefined : last.page + 1),
+    getNextPageParam: (lastPage) =>
+      lastPage.isEnd ? undefined : lastPage.page + 1,
     enabled: normalized.query.length > 0,
     retry: shouldRetryBookSearch,
     retryDelay: bookSearchRetryDelay,
@@ -142,6 +148,6 @@ export const bookSearchOptions = (
 };
 
 /** 검색 조건에 맞는 결과를 페이지 단위로 불러오는 훅이다. 조건은 {@link bookSearchOptions}가 정리한다. */
-export function useBookSearch(params: BookSearchParams) {
-  return useInfiniteQuery(bookSearchOptions(params));
+export function useBookSearch(bookSearchParams: BookSearchParams) {
+  return useInfiniteQuery(bookSearchOptions(bookSearchParams));
 }

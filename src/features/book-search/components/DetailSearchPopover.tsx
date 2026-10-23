@@ -31,21 +31,21 @@ export interface DetailSearchValue {
 }
 
 interface DetailSearchPopoverProps {
-  initial: DetailSearchValue;
+  initialDetailSearch: DetailSearchValue;
   onSearch: (value: DetailSearchValue) => void;
 }
 
 export function DetailSearchPopover({
-  initial,
+  initialDetailSearch,
   onSearch,
 }: DetailSearchPopoverProps) {
   const [open, setOpen] = useState(false);
-  const [target, setTarget] = useState(initial.target);
-  const [query, setQuery] = useState(initial.query);
+  const [target, setTarget] = useState(initialDetailSearch.target);
+  const [query, setQuery] = useState(initialDetailSearch.query);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogId = useId();
-  const popover = useDismiss<HTMLDivElement>(open, (reason) => {
+  const popoverDismissProps = useDismiss<HTMLDivElement>(open, (reason) => {
     if (reason === "escape") close();
     else setOpen(false);
   });
@@ -67,7 +67,7 @@ export function DetailSearchPopover({
   }
 
   return (
-    <div {...popover} className="relative">
+    <div {...popoverDismissProps} className="relative">
       <Button
         ref={toggleRef}
         variant="outline"
@@ -99,8 +99,8 @@ export function DetailSearchPopover({
             <div className="flex items-end gap-2">
               <TargetSelect
                 value={target}
-                onChange={(item) => {
-                  setTarget(item);
+                onChange={(selectedTarget) => {
+                  setTarget(selectedTarget);
                   inputRef.current?.focus();
                 }}
               />
@@ -133,49 +133,53 @@ interface TargetSelectProps {
 // APG select-only combobox. 팝업과 함께 unmount되므로 다시 열면 항상 닫힌 상태로 시작한다.
 function TargetSelect({ value, onChange }: TargetSelectProps) {
   // null이면 목록이 닫힌 상태다.
-  const [active, setActive] = useState<number | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const listboxId = useId();
   const optionId = (index: number) => `${listboxId}-${index}`;
-  const expanded = active !== null;
-  const dismiss = useDismiss<HTMLDivElement>(expanded, () => setActive(null));
+  const expanded = activeIndex !== null;
+  const dismissProps = useDismiss<HTMLDivElement>(expanded, () =>
+    setActiveIndex(null),
+  );
 
   function expand() {
-    setActive(BOOK_TARGETS.indexOf(value));
+    setActiveIndex(BOOK_TARGETS.indexOf(value));
   }
 
-  function choose(item: BookTarget) {
-    setActive(null);
-    onChange(item);
+  function chooseTarget(target: BookTarget) {
+    setActiveIndex(null);
+    onChange(target);
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if (active === null) {
+    if (activeIndex === null) {
       if (!SELECT_OPEN_KEYS.has(event.key)) return;
       event.preventDefault();
       expand();
       return;
     }
-    const move = TARGET_MOVES[event.key];
-    if (move) {
+    const direction = TARGET_MOVES[event.key];
+    if (direction) {
       event.preventDefault();
-      setActive(moveIndex(active, BOOK_TARGETS.length, move, false));
+      setActiveIndex(
+        moveIndex(activeIndex, BOOK_TARGETS.length, direction, false),
+      );
     } else if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      choose(BOOK_TARGETS[active]);
+      chooseTarget(BOOK_TARGETS[activeIndex]);
     }
   }
 
   return (
-    <div {...dismiss} className="relative w-[100px] shrink-0">
+    <div {...dismissProps} className="relative w-[100px] shrink-0">
       <div
         role="combobox"
         tabIndex={0}
         aria-haspopup="listbox"
         aria-expanded={expanded}
         aria-controls={listboxId}
-        aria-activedescendant={expanded ? optionId(active) : undefined}
+        aria-activedescendant={expanded ? optionId(activeIndex) : undefined}
         aria-label={`검색 조건 ${SEARCH_TARGET_LABEL[value]}`}
-        onClick={() => (expanded ? setActive(null) : expand())}
+        onClick={() => (expanded ? setActiveIndex(null) : expand())}
         onKeyDown={handleKeyDown}
         className="text-body2-bold border-gray flex h-8 w-full cursor-pointer items-center justify-between border-b"
       >
@@ -191,18 +195,20 @@ function TargetSelect({ value, onChange }: TargetSelectProps) {
         onMouseDown={(event) => event.preventDefault()}
         className="absolute inset-x-0 top-full z-10 bg-white shadow-[0_4px_14px_rgba(0,0,0,0.15)]"
       >
-        {BOOK_TARGETS.map((item, index) => (
+        {BOOK_TARGETS.map((optionTarget, index) => (
           <li
-            key={item}
+            key={optionTarget}
             id={optionId(index)}
             role="option"
-            aria-selected={index === active}
-            onClick={() => choose(item)}
+            aria-selected={index === activeIndex}
+            onClick={() => chooseTarget(optionTarget)}
             className={`text-body2 aria-selected:bg-light-gray flex h-[30px] cursor-pointer items-center px-1 ${
-              item === value ? "text-text-primary" : "text-text-subtitle"
+              optionTarget === value
+                ? "text-text-primary"
+                : "text-text-subtitle"
             }`}
           >
-            {SEARCH_TARGET_LABEL[item]}
+            {SEARCH_TARGET_LABEL[optionTarget]}
           </li>
         ))}
       </ul>

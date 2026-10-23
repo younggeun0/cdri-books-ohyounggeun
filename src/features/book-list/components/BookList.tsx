@@ -43,13 +43,14 @@ export function BookList({ books, isWished, onToggleWish }: BookListProps) {
   });
 
   useLayoutEffect(() => {
-    const measure = () => {
-      const list = listRef.current;
-      if (list) setScrollMargin(list.getBoundingClientRect().top + scrollY);
+    const measureScrollMargin = () => {
+      const listElement = listRef.current;
+      if (listElement)
+        setScrollMargin(listElement.getBoundingClientRect().top + scrollY);
     };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    measureScrollMargin();
+    window.addEventListener("resize", measureScrollMargin);
+    return () => window.removeEventListener("resize", measureScrollMargin);
   }, []);
 
   const toggleExpanded = useCallback(
@@ -64,7 +65,7 @@ export function BookList({ books, isWished, onToggleWish }: BookListProps) {
 
   // 서버와 하이드레이션 첫 렌더는 스크롤 위치와 화면 크기를 모르므로 받은 항목(첫 페이지)을 모두 일반 흐름으로 그린다.
   // 그래서 서버 HTML과 첫 클라이언트 렌더가 같고, JS가 늦게 와도 추정 높이 때문에 항목이 겹쳐 보이지 않는다.
-  const rows: { index: number; style?: CSSProperties }[] = hydrated
+  const renderedRows: { index: number; style?: CSSProperties }[] = hydrated
     ? virtualizer.getVirtualItems().map(({ index, start }) => ({
         index,
         style: {
@@ -83,7 +84,7 @@ export function BookList({ books, isWished, onToggleWish }: BookListProps) {
       className="relative mt-9"
       style={hydrated ? { height: virtualizer.getTotalSize() } : undefined}
     >
-      {rows.map(({ index, style }) => {
+      {renderedRows.map(({ index, style }) => {
         const book = books[index];
         return (
           <li
@@ -110,12 +111,12 @@ export function BookList({ books, isWished, onToggleWish }: BookListProps) {
   );
 }
 
-const SKELETON_ROWS = 4;
+const SKELETON_ROW_COUNT = 4;
 
 export function BookListSkeleton() {
   return (
     <ul aria-busy="true" aria-label="목록을 불러오는 중" className="mt-9">
-      {Array.from({ length: SKELETON_ROWS }, (_, index) => (
+      {Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
         <li
           key={index}
           className="border-divider flex items-center gap-4 border-b py-4 motion-safe:animate-pulse lg:gap-12 lg:pr-4 lg:pl-12"

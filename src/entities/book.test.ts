@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { KakaoBookDocument } from "@/lib/kakao/schema";
 import { toBook, toBookPage } from "./book";
 
-const base: KakaoBookDocument = {
+const kakaoDocument: KakaoBookDocument = {
   title: "노르웨이의 숲",
   contents: "소개",
   url: "https://example.com/book/1",
@@ -14,11 +14,11 @@ const base: KakaoBookDocument = {
 
 describe("toBook", () => {
   it("id는 카카오 url이다", () => {
-    expect(toBook(base).id).toBe(base.url);
+    expect(toBook(kakaoDocument).id).toBe(kakaoDocument.url);
   });
 
   it("UI가 쓰는 필드만 담는다", () => {
-    expect(Object.keys(toBook(base)).sort()).toEqual(
+    expect(Object.keys(toBook(kakaoDocument)).sort()).toEqual(
       [
         "authors",
         "contents",
@@ -33,16 +33,18 @@ describe("toBook", () => {
   });
 
   it.each([-1, 0])("sale_price가 %i이면 salePrice는 null이다", (salePrice) => {
-    expect(toBook({ ...base, sale_price: salePrice }).salePrice).toBeNull();
+    expect(
+      toBook({ ...kakaoDocument, sale_price: salePrice }).salePrice,
+    ).toBeNull();
   });
 
   it("sale_price가 양수면 그대로 salePrice가 된다", () => {
-    expect(toBook(base).salePrice).toBe(11970);
+    expect(toBook(kakaoDocument).salePrice).toBe(11970);
   });
 
   it("빈 썸네일은 null, 값이 있으면 그대로 둔다", () => {
-    expect(toBook({ ...base, thumbnail: "" }).thumbnail).toBeNull();
-    expect(toBook(base).thumbnail).toBe(
+    expect(toBook({ ...kakaoDocument, thumbnail: "" }).thumbnail).toBeNull();
+    expect(toBook(kakaoDocument).thumbnail).toBe(
       "https://search1.kakaocdn.net/thumb/R120x174.q85/?fname=1",
     );
   });
@@ -53,7 +55,7 @@ describe("toBookPage", () => {
     const page = toBookPage(
       {
         meta: { total_count: 23, pageable_count: 23, is_end: false },
-        documents: [base],
+        documents: [kakaoDocument],
       },
       2,
     );

@@ -1,41 +1,42 @@
 import { describe, expect, it } from "vitest";
 import { parseSearchParams, toSearchQueryString } from "./search-params";
 
-const parse = (qs: string) => parseSearchParams(new URLSearchParams(qs));
+const parseQueryString = (queryString: string) =>
+  parseSearchParams(new URLSearchParams(queryString));
 
 describe("parseSearchParams", () => {
   it("query와 target을 읽는다", () => {
-    expect(parse("query=한강&target=person")).toEqual({
+    expect(parseQueryString("query=한강&target=person")).toEqual({
       query: "한강",
       target: "person",
     });
   });
 
   it("target이 없거나 알 수 없으면 전체 검색으로 처리한다", () => {
-    expect(parse("query=무라카미")).toEqual({
+    expect(parseQueryString("query=무라카미")).toEqual({
       query: "무라카미",
       target: "all",
     });
-    expect(parse("query=무라카미&target=isbn")).toEqual({
+    expect(parseQueryString("query=무라카미&target=isbn")).toEqual({
       query: "무라카미",
       target: "all",
     });
-    expect(parse("query=무라카미&target=all")).toEqual({
+    expect(parseQueryString("query=무라카미&target=all")).toEqual({
       query: "무라카미",
       target: "all",
     });
   });
 
   it("앞뒤 공백을 지운다", () => {
-    expect(parse("query=%20%20한강%20").query).toBe("한강");
+    expect(parseQueryString("query=%20%20한강%20").query).toBe("한강");
   });
 
   it("검색어가 비어 있으면 target과 상관없이 빈 전체 검색이다", () => {
     const empty = { query: "", target: "all" };
-    expect(parse("")).toEqual(empty);
-    expect(parse("query=")).toEqual(empty);
-    expect(parse("query=%20&target=title")).toEqual(empty);
-    expect(parse("target=title")).toEqual(empty);
+    expect(parseQueryString("")).toEqual(empty);
+    expect(parseQueryString("query=")).toEqual(empty);
+    expect(parseQueryString("query=%20&target=title")).toEqual(empty);
+    expect(parseQueryString("target=title")).toEqual(empty);
   });
 });
 
@@ -53,9 +54,11 @@ describe("toSearchQueryString", () => {
   });
 
   it("parse와 왕복해도 같은 조건이다", () => {
-    const params = { query: "a&b=c d", target: "publisher" } as const;
+    const bookSearchParams = { query: "a&b=c d", target: "publisher" } as const;
     expect(
-      parseSearchParams(new URLSearchParams(toSearchQueryString(params))),
-    ).toEqual(params);
+      parseSearchParams(
+        new URLSearchParams(toSearchQueryString(bookSearchParams)),
+      ),
+    ).toEqual(bookSearchParams);
   });
 });

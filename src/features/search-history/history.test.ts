@@ -21,8 +21,8 @@ describe("addSearchHistory", () => {
   });
 
   it("최대 개수를 넘으면 가장 오래된 것부터 지운다", () => {
-    const full = ["8", "7", "6", "5", "4", "3", "2", "1"];
-    expect(addSearchHistory(full, "9")).toEqual([
+    const fullHistory = ["8", "7", "6", "5", "4", "3", "2", "1"];
+    expect(addSearchHistory(fullHistory, "9")).toEqual([
       "9",
       "8",
       "7",
@@ -36,9 +36,9 @@ describe("addSearchHistory", () => {
   });
 
   it("원본 배열을 바꾸지 않는다", () => {
-    const list = ["a", "b"];
-    addSearchHistory(list, "b");
-    expect(list).toEqual(["a", "b"]);
+    const history = ["a", "b"];
+    addSearchHistory(history, "b");
+    expect(history).toEqual(["a", "b"]);
   });
 });
 
